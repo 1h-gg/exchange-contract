@@ -489,7 +489,7 @@ counts, signature) per `expectations.build` and the committed output must match 
 ## CLI
 
 ```
-bin/exchange sync --from=nesc --to=pmo --from-url=https://nesc.example --to-url=https://pmo.example [--both] [--include-blobs] [--program=comcast-nesc] [--timeout=600] [--keep]
+bin/exchange sync --from=nesc --to=pmo --from-url=https://nesc.example --to-url=https://pmo.example [--both] [--include-blobs] [--no-files] [--program=comcast-nesc] [--timeout=600] [--keep]
 bin/exchange push-updates changes.xlsx --url=https://nesc.example [--dry-run] [--create]
 bin/exchange fixtures:sign [--fixture=NAME]   bin/exchange fixtures:build NAME [--out=ZIP]   bin/exchange suite:run
 bin/exchange schemas:audit                    bin/exchange package:inspect some.txx.zip --keys=texstar:comcast=<secret> --max-unpacked-mb=2048
@@ -501,10 +501,21 @@ environment (`EXCHANGE_FROM_TOKEN`, `EXCHANGE_TO_TOKEN`, `EXCHANGE_TOKEN`), or t
 shell history. `RunnerClient` refuses a non-https base URL unless the host is localhost / 127.0.0.1 /
 ::1 or `--insecure` (`allowInsecure: true`) is given. `sync`
 builds "everything not yet receipted" on the FROM app, waits, downloads the signed zip (checked
-against `X-Package-Sha256`), uploads it to the TO app with `auto_apply`, waits, prints the receipt;
+against `X-Package-Sha256`), copies the files the package references but does not carry, uploads it
+to the TO app with `auto_apply`, waits, prints the receipt;
 `--both` runs the opposite direction next, which carries the receipt back. The runner talks to both
 `/api/v1/exchange` surfaces itself — neither app needs to reach the other. `RunnerClient` is the same
 code with `ext-curl` behind a callable transport (`tests/Support/FakeTransport.php` shows the shape).
+
+**Files (1.1.x):** a package built without `include_blobs` names each report PDF by `sha256` only, and
+the consumer rejects such a row `blob_missing` unless the file is already in its store. So between the
+download and the upload `sync` reads every `inspection_reports` row's `sha256`
+(`SyncCommand::FILE_REF_STREAMS`) that is not a `files/<sha256>` entry, sends `HEAD /files/{sha256}` to
+the TO app and, only for a file it lacks, `GET /files/{sha256}` from the FROM app and
+`PUT /files/{sha256}` to the TO app. It prints `files: N referenced, N in package, N already on <to>,
+N copied, N failed`. A failed copy is printed and the upload still goes ahead, so the TO app rejects just
+those rows. `--no-files` skips the step. Packet photos are not copied: they travel by
+`photos[].file_url` (Consumer rule 6).
 
 ## Development
 
@@ -553,6 +564,13 @@ both forms.
 | confidence transport switch | PMO drops `confidence_label` and sends the label in `confidence` only after both apps run 1.1.0 (a 1.0.0 reader rejects a string confidence as `schema_invalid`) | the NESC poles transport switch stays blocked until both apps run 1.1.0 |
 
 ## Changelog
+
+### Unreleased (1.1.x, reference client only)
+
+- `bin/exchange sync` copies the report files a package references but does not carry
+  (`HEAD`/`GET`/`PUT /files/{sha256}`) before the upload, and gains `--no-files`. Found in the first
+  live nescdev ⇄ pmotest round trip: without it every report row was rejected `blob_missing`. The wire
+  contract does not change.
 
 ### 1.1.0 (2026-09-28)
 

@@ -15,7 +15,7 @@ use Texstar\Exchange\Testing\FixtureSigner;
 /**
  * The reference CLI (plain argv, no framework). `bin/exchange` is a thin wrapper around run().
  *
- *   exchange sync --from=nesc --to=pmo --from-url=… --to-url=… [--from-token=… --to-token=…] [--both] [--include-blobs] [--program=…] [--timeout=600] [--keep]
+ *   exchange sync --from=nesc --to=pmo --from-url=… --to-url=… [--from-token=… --to-token=…] [--both] [--include-blobs] [--no-files] [--program=…] [--timeout=600] [--keep]
  *   exchange push-updates <file.xlsx> --url=… [--token=…] [--dry-run] [--create]
  *   exchange fixtures:sign [--fixture=<name>]         rewrite fixture manifests (hashes + signatures) from expectations.build
  *   exchange fixtures:build <name> [--out=<zip>]      zip one fixture tree verbatim
@@ -118,7 +118,7 @@ final class App
         }
         ($this->out)(implode("\n", [
             'usage: exchange <command> [options]',
-            '  sync --from=nesc --to=pmo --from-url=URL --to-url=URL [--from-token=T --to-token=T] [--both] [--include-blobs] [--program=P] [--timeout=600] [--keep]',
+            '  sync --from=nesc --to=pmo --from-url=URL --to-url=URL [--from-token=T --to-token=T] [--both] [--include-blobs] [--no-files] [--program=P] [--timeout=600] [--keep]',
             '  push-updates <file.xlsx> --url=URL [--token=T] [--dry-run] [--create]',
             '  fixtures:sign [--fixture=NAME]     fixtures:build NAME [--out=ZIP]     suite:run',
             '  schemas:audit     package:inspect <zip> [--keys=id=secret,...] [--max-unpacked-mb=N]',

@@ -8,6 +8,12 @@ use PHPUnit\Framework\TestCase;
 use Texstar\Exchange\Cli\App;
 use Texstar\Exchange\Cli\Tokens;
 use Texstar\Exchange\Client\RunnerClient;
+use Texstar\Exchange\Dto\Manifest;
+use Texstar\Exchange\Dto\Producer;
+use Texstar\Exchange\Dto\Scope;
+use Texstar\Exchange\Package\PackageBuilder;
+use Texstar\Exchange\Signing\KeyRing;
+use Texstar\Exchange\Signing\Signer;
 use Texstar\Exchange\Testing\ContractSuite;
 use Texstar\Exchange\Tests\Support\FakeTransport;
 
@@ -111,6 +117,81 @@ final class CliTest extends TestCase
         $this->assertContains('POST '.self::P.'/outbound', $pmo->calls(), 'the reverse direction built a PMO package');
         $this->assertContains('POST '.self::P.'/inbound', $nesc->calls(), 'and uploaded it to NESC');
         $this->assertStringContainsString('[pmo -> nesc] import rejected: signature_invalid', implode("\n", $this->err));
+    }
+
+    public function test_sync_copies_the_referenced_files_the_target_lacks_before_the_upload(): void
+    {
+        $carried = '%PDF-1.4 carried';
+        $present = '%PDF-1.4 present';
+        $missing = '%PDF-1.4 missing';
+        [$shaCarried, $shaPresent, $shaMissing] = [hash('sha256', $carried), hash('sha256', $present), hash('sha256', $missing)];
+        $zip = (string) tempnam(sys_get_temp_dir(), 'txx-cli');
+        unlink($zip);
+        $zip .= '.txx.zip';
+        $blob = tempnam(sys_get_temp_dir(), 'txx-cli');
+        $this->tokenFiles[] = $zip;
+        $this->tokenFiles[] = $blob;
+        file_put_contents($blob, $carried);
+        $b = PackageBuilder::open($zip, new Manifest(packageId: 'aaaaaaaa-0000-4000-8000-000000000001', direction: 'nesc_to_pmo', createdAt: '2026-09-28T12:00:00Z', producer: new Producer('nesc', '1.0.0', 'nescdev', '1.1.0'), scope: Scope::unscoped()));
+        $report = static fn (string $id, ?string $sha): array => ['external_report_id' => $id, 'job_number' => 'JB000001', 'sha256' => $sha, 'content_base64' => null];
+        $b->addStreamRows('inspection_reports', [$report('r1', $shaCarried), $report('r2', $shaPresent), $report('r3', $shaMissing), $report('r4', strtoupper($shaMissing)), $report('r5', null)]);
+        $b->addBlob($shaCarried, $blob, 'application/pdf');
+        $b->finalize(new Signer, KeyRing::fromEnvString('texstar:comcast=cli-test-key'), 'texstar:comcast');
+        $bytes = (string) file_get_contents($zip);
+
+        $nesc = $this->transports['https://nesc.test'] = new FakeTransport;
+        $pmo = $this->transports['https://pmo.test'] = new FakeTransport;
+        $nesc->on('POST', self::P.'/outbound', 202, ['package_id' => 'aaaaaaaa-0000-4000-8000-000000000001', 'status' => 'queued']);
+        $nesc->on('GET', self::P.'/outbound/aaaaaaaa-0000-4000-8000-000000000001', 200, ['status' => 'ready', 'counts' => ['inspection_reports' => ['rows' => 5]]]);
+        $nesc->on('GET', self::P.'/outbound/aaaaaaaa-0000-4000-8000-000000000001/download', 200, $bytes, ['X-Package-Sha256' => hash('sha256', $bytes)]);
+        $nesc->on('GET', self::P.'/files/'.$shaMissing, 200, $missing);
+        $pmo->on('GET', self::P.'/status', 200, ['limits' => ['max_upload_mb' => 60, 'chunk_mb' => 8]]);
+        $pmo->on('HEAD', self::P.'/files/'.$shaPresent, 200, '', ['Content-Length' => '16']);
+        $pmo->on('HEAD', self::P.'/files/'.$shaMissing, 404, ['error' => ['code' => 'not_found', 'message' => 'no']]);
+        $pmo->on('PUT', self::P.'/files/'.$shaMissing, 201, ['sha256' => $shaMissing]);
+        $pmo->on('POST', self::P.'/inbound', 202, ['import_id' => 'bbbbbbbb-0000-4000-8000-000000000002', 'status' => 'staging']);
+        $pmo->on('GET', self::P.'/inbound/bbbbbbbb-0000-4000-8000-000000000002', 200, ['status' => 'applied']);
+        $pmo->on('GET', self::P.'/inbound/bbbbbbbb-0000-4000-8000-000000000002/receipt', 200, ['receipt_id' => 'r', 'status' => 'applied', 'streams' => []]);
+
+        $code = $this->app()->run(['sync', '--from=nesc', '--to=pmo', '--from-url=https://nesc.test', '--to-url=https://pmo.test', '--from-token=a', '--to-token=b']);
+
+        $this->assertSame(0, $code, implode("\n", $this->err));
+        $this->assertSame([
+            'HEAD '.self::P.'/files/'.$shaPresent,
+            'HEAD '.self::P.'/files/'.$shaMissing,
+            'PUT '.self::P.'/files/'.$shaMissing,
+            'GET '.self::P.'/status',
+            'POST '.self::P.'/inbound',
+            'GET '.self::P.'/inbound/bbbbbbbb-0000-4000-8000-000000000002',
+            'GET '.self::P.'/inbound/bbbbbbbb-0000-4000-8000-000000000002/receipt',
+        ], $pmo->calls(), 'the carried blob is not probed, the present one is not copied, the missing one is PUT once, all before the upload');
+        $this->assertContains('GET '.self::P.'/files/'.$shaMissing, $nesc->calls());
+        $this->assertStringContainsString('[nesc -> pmo] files: 3 referenced, 1 in package, 1 already on pmo, 1 copied, 0 failed', implode("\n", $this->out));
+
+        // --no-files skips the step; a failed copy is reported and the upload still goes ahead.
+        foreach ([['--no-files'], []] as $i => $extra) {
+            $this->transports = [];
+            $nesc = $this->transports['https://nesc.test'] = new FakeTransport;
+            $pmo = $this->transports['https://pmo.test'] = new FakeTransport;
+            $nesc->on('POST', self::P.'/outbound', 202, ['package_id' => 'aaaaaaaa-0000-4000-8000-000000000001', 'status' => 'queued']);
+            $nesc->on('GET', self::P.'/outbound/aaaaaaaa-0000-4000-8000-000000000001', 200, ['status' => 'ready', 'counts' => []]);
+            $nesc->on('GET', self::P.'/outbound/aaaaaaaa-0000-4000-8000-000000000001/download', 200, $bytes, ['X-Package-Sha256' => hash('sha256', $bytes)]);
+            $nesc->on('GET', self::P.'/files/'.$shaMissing, 404, ['error' => ['code' => 'not_found', 'message' => 'gone']]);
+            $pmo->on('HEAD', self::P.'/files/'.$shaPresent, 200, '');
+            $pmo->on('HEAD', self::P.'/files/'.$shaMissing, 404, '');
+            $pmo->on('POST', self::P.'/inbound', 202, ['import_id' => 'bbbbbbbb-0000-4000-8000-000000000002', 'status' => 'staging']);
+            $pmo->on('GET', self::P.'/inbound/bbbbbbbb-0000-4000-8000-000000000002', 200, ['status' => 'applied']);
+            $code = $this->app()->run(array_merge(['sync', '--from=nesc', '--to=pmo', '--from-url=https://nesc.test', '--to-url=https://pmo.test', '--from-token=a', '--to-token=b'], $extra));
+            $this->assertSame(0, $code, implode("\n", $this->err));
+            $this->assertContains('POST '.self::P.'/inbound', $pmo->calls());
+            $this->assertNotContains('PUT '.self::P.'/files/'.$shaMissing, $pmo->calls());
+            if ($i === 0) {
+                $this->assertSame([], array_values(array_filter($pmo->calls(), static fn (string $c): bool => str_starts_with($c, 'HEAD '))), '--no-files makes no file call');
+            } else {
+                $this->assertStringContainsString('file '.$shaMissing.' not copied: not_found gone', implode("\n", $this->err));
+                $this->assertStringContainsString('[nesc -> pmo] files: 3 referenced, 1 in package, 1 already on pmo, 0 copied, 1 failed', implode("\n", $this->out));
+            }
+        }
     }
 
     public function test_sync_validates_its_options(): void
