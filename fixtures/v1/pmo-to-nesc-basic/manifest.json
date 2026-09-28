@@ -79,8 +79,8 @@
             "stream": "p2_runner_status",
             "schema": "p2_runner_status@1",
             "rows": 4,
-            "sha256": "2de8dee46632972ccd31ee0dd0bcd939f20c8e4eee5988a52418cef6d9c12fa6",
-            "bytes": 2126,
+            "sha256": "0b2cadf26f2536c341bb535a35094b0b22123f06098df379f05efee30b65eeb6",
+            "bytes": 2223,
             "mode": "delta"
         },
         {
@@ -257,6 +257,6 @@
     "signature": {
         "alg": "HMAC-SHA256",
         "key_id": "texstar:comcast",
-        "value": "b024784c66b4040b982e52abfb7c459345749e138e83eb2e304d4e564df0baa2"
+        "value": "ca13ac49077080250a5c705bbafb1ba250eab74efdfa579bfc205ce48bb2beba"
     }
 }

@@ -216,10 +216,43 @@
             "type": "boolean"
         },
         "target_task": {
+            "description": "The job's P2 target task as PMO stores it (P2RunnerJobState.target_task, P2RunnerStager::targetTask()): {record_id, name, type, status, hold}, or null when no open task is ours. NESC's mirror keeps it only when it is an object (P2RunnerMirrorService). 1.1.x: was typed string|null by mistake, which rejected every job row that had a target task.",
             "type": [
-                "string",
+                "object",
                 "null"
-            ]
+            ],
+            "properties": {
+                "record_id": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "name": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "type": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "status": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "hold": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                }
+            }
         },
         "owner_name": {
             "type": [

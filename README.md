@@ -571,6 +571,10 @@ both forms.
   (`HEAD`/`GET`/`PUT /files/{sha256}`) before the upload, and gains `--no-files`. Found in the first
   live nescdev ⇄ pmotest round trip: without it every report row was rejected `blob_missing`. The wire
   contract does not change.
+- `p2_runner_status.target_task` is typed `object|null` (`{record_id, name, type, status, hold}`, what
+  PMO stores and NESC's mirror keeps) instead of `string|null`. The string type was a skeleton mistake:
+  the first live round trip rejected 2,668 of PMO's 4,099 job rows `schema_invalid`. The
+  `pmo-to-nesc-basic` fixture now ships the object and is re-signed.
 
 ### 1.1.0 (2026-09-28)
 

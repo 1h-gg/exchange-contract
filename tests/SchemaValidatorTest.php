@@ -149,6 +149,24 @@ final class SchemaValidatorTest extends TestCase
         $this->assertSame('UpdateOp', $registry->forStream('updates')['title']);
     }
 
+    public function test_p2_runner_job_target_task_is_the_task_object_pmo_stores(): void
+    {
+        $registry = new SchemaRegistry;
+        $job = null;
+        foreach (file(__DIR__.'/../fixtures/v1/pmo-to-nesc-basic/streams/p2_runner_status.ndjson', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+            $row = json_decode($line, true, 64, JSON_THROW_ON_ERROR);
+            $job ??= ($row['kind'] ?? null) === 'job' ? $row : null;
+        }
+        $this->assertIsArray($job, 'the fixture carries a job row');
+        $this->assertSame(['record_id' => 'a0pcw00000MLNwE', 'name' => 'TSK0034669922', 'type' => 'Create Estimate', 'status' => 'Accepted', 'hold' => false], $job['target_task'], 'the fixture ships the object PMO stores');
+        $this->assertSame([], $registry->validateRow('p2_runner_status', $job));
+        $job['target_task']['partner'] = 'TEXSTAR ENTERPRISES INC';
+        $this->assertSame([], $registry->validateRow('p2_runner_status', $job), 'unknown task keys are ignored');
+        $this->assertSame([], $registry->validateRow('p2_runner_status', ['target_task' => null] + $job));
+        $this->assertSame(['$.target_task:type'], $this->keywords($registry->validateRow('p2_runner_status', ['target_task' => 'TSK0032627183'] + $job)));
+        $this->assertSame(['$.target_task.hold:type'], $this->keywords($registry->validateRow('p2_runner_status', ['target_task' => ['hold' => 'no']] + $job)));
+    }
+
     public function test_readiness_row_validates_and_a_missing_key_is_reported(): void
     {
         $registry = new SchemaRegistry;
