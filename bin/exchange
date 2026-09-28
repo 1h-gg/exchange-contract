@@ -1,9 +1,9 @@
 #!/usr/bin/env php
 <?php
 
-use Texstar\Exchange\Cli\App;
-
 declare(strict_types=1);
+
+use Texstar\Exchange\Cli\App;
 
 /**
  * Reference CLI of texstar/exchange-contract. See Texstar\Exchange\Cli\App for the commands:
