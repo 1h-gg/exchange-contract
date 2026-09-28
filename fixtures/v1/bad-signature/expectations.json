@@ -1,0 +1,29 @@
+{
+    "description": "Signed under key id texstar:comcast with the wrong secret: verify throws signature_invalid; everything else is well formed.",
+    "kind": "package",
+    "direction": "nesc_to_pmo",
+    "key_id": "texstar:comcast",
+    "scope": {
+        "tenant": "texstar",
+        "contract": "comcast",
+        "program": "comcast-nesc",
+        "instance": null
+    },
+    "scope_declared": true,
+    "verify": "signature_invalid",
+    "validate": "ok",
+    "violations": [],
+    "hashes": "ok",
+    "streams": {
+        "readiness": {
+            "rows": 1,
+            "rejects": 0
+        }
+    },
+    "skipped": [],
+    "receipts": 0,
+    "build": {
+        "recompute": true,
+        "sign": "wrong-secret"
+    }
+}

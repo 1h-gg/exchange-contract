@@ -1,0 +1,29 @@
+{
+    "description": "A kind=rows mini package as POST /rows/{stream} builds it: signature null. Valid through PackageImportService::stage(kind: rows) — the Sanctum principal authenticated the rows — and rejected as kind=package (signature_missing => rejected_code signature_invalid) when pushed through POST /inbound.",
+    "kind": "rows",
+    "direction": "pmo_to_nesc",
+    "key_id": null,
+    "scope": {
+        "tenant": "texstar",
+        "contract": "comcast",
+        "program": "comcast-nesc",
+        "instance": null
+    },
+    "scope_declared": true,
+    "verify": "signature_missing",
+    "validate": "ok",
+    "violations": [],
+    "hashes": "ok",
+    "streams": {
+        "packets_wanted": {
+            "rows": 2,
+            "rejects": 0
+        }
+    },
+    "skipped": [],
+    "receipts": 0,
+    "build": {
+        "recompute": true,
+        "sign": "none"
+    }
+}

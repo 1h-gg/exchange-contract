@@ -1,0 +1,29 @@
+{
+    "description": "The signed manifest hashes the original readiness row; the stream file was edited afterwards (approved_pole_count 1 -> 2). verify passes, checkHashes() throws hash_mismatch.",
+    "kind": "package",
+    "direction": "nesc_to_pmo",
+    "key_id": "texstar:comcast",
+    "scope": {
+        "tenant": "texstar",
+        "contract": "comcast",
+        "program": "comcast-nesc",
+        "instance": null
+    },
+    "scope_declared": true,
+    "verify": "ok",
+    "validate": "ok",
+    "violations": [],
+    "hashes": "hash_mismatch",
+    "streams": {
+        "readiness": {
+            "rows": 1,
+            "rejects": 0
+        }
+    },
+    "skipped": [],
+    "receipts": 0,
+    "build": {
+        "recompute": false,
+        "sign": "valid"
+    }
+}

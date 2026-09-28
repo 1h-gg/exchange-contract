@@ -1,0 +1,57 @@
+{
+    "format": "texstar-exchange-receipt",
+    "version": 1,
+    "receipts": [
+        {
+            "format": "texstar-exchange-receipt",
+            "version": 1,
+            "package_id": "5b6c7d8e-9f0a-4b1c-8d2e-3f4a5b6c7d8e",
+            "receipt_id": "8d9e0f1a-2b3c-4d4e-8f5a-6b7c8d9e0f1a",
+            "produced_at": "2026-09-01T12:00:00+00:00",
+            "producer": {
+                "app": "nesc",
+                "version": "2026.09.27",
+                "instance": "nescdev",
+                "contract": "1.0.0"
+            },
+            "scope": {
+                "tenant": "texstar",
+                "contract": "comcast",
+                "program": "comcast-nesc",
+                "instance": null
+            },
+            "streams": {
+                "jobs": {
+                    "received": 2,
+                    "accepted": 2,
+                    "rejected": 0,
+                    "accepted_all": true,
+                    "rejected_rows": [],
+                    "cursor_to": {
+                        "updated_since": "2026-09-01T11:59:00+00:00",
+                        "after_id": "JB0002685019"
+                    },
+                    "applied_at": "2026-09-01T12:00:00+00:00"
+                },
+                "poles": {
+                    "received": 3,
+                    "accepted": 2,
+                    "rejected": 1,
+                    "accepted_all": false,
+                    "rejected_rows": [
+                        {
+                            "key": "c5038f0154bfba0457b0b95a8a8ff6fd4ae69d970dadde089fb68b3c83df6414",
+                            "seq": 2,
+                            "code": "unknown_job",
+                            "message": "JB0002685019 is not held by NESC"
+                        }
+                    ],
+                    "cursor_to": null,
+                    "applied_at": "2026-09-01T12:00:00+00:00"
+                }
+            },
+            "status": "partial",
+            "message": "poles: 1 row rejected"
+        }
+    ]
+}

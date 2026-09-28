@@ -1,0 +1,29 @@
+{
+    "description": "files/<sha256> whose bytes do not hash to the entry name / manifest sha256: checkHashes() throws hash_mismatch (path discipline passes because the path equals blobs[].sha256).",
+    "kind": "package",
+    "direction": "nesc_to_pmo",
+    "key_id": "texstar:comcast",
+    "scope": {
+        "tenant": "texstar",
+        "contract": "comcast",
+        "program": "comcast-nesc",
+        "instance": null
+    },
+    "scope_declared": true,
+    "verify": "ok",
+    "validate": "ok",
+    "violations": [],
+    "hashes": "hash_mismatch",
+    "streams": {
+        "readiness": {
+            "rows": 1,
+            "rejects": 0
+        }
+    },
+    "skipped": [],
+    "receipts": 0,
+    "build": {
+        "recompute": false,
+        "sign": "valid"
+    }
+}

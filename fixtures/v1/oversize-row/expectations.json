@@ -1,0 +1,32 @@
+{
+    "description": "Line 1 of readiness is a 2 MB JSON object (> MAX_ROW_BYTES 1 MiB): the reader yields RowError row_too_large for seq 1, seq 0 and 2 parse, and the package itself stays valid.",
+    "kind": "package",
+    "direction": "nesc_to_pmo",
+    "key_id": "texstar:comcast",
+    "scope": {
+        "tenant": "texstar",
+        "contract": "comcast",
+        "program": "comcast-nesc",
+        "instance": null
+    },
+    "scope_declared": true,
+    "verify": "ok",
+    "validate": "ok",
+    "violations": [],
+    "hashes": "ok",
+    "streams": {
+        "readiness": {
+            "rows": 2,
+            "rejects": 1,
+            "reject_codes": [
+                "row_too_large"
+            ]
+        }
+    },
+    "skipped": [],
+    "receipts": 0,
+    "build": {
+        "recompute": true,
+        "sign": "valid"
+    }
+}

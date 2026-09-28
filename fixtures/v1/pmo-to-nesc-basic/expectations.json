@@ -1,0 +1,81 @@
+{
+    "description": "PMO -> NESC: every pmo_to_nesc stream in the shape the PMO feed producers emit today (hand-derived; dailies, gis_features and pge_violations pin the consumer shape because no PMO bridge producer exists yet), signed with texstar:comcast, plus PMO's receipt for the NESC package n-0001.",
+    "kind": "package",
+    "direction": "pmo_to_nesc",
+    "key_id": "texstar:comcast",
+    "scope": {
+        "tenant": "texstar",
+        "contract": "comcast",
+        "program": "comcast-nesc",
+        "instance": null
+    },
+    "scope_declared": true,
+    "verify": "ok",
+    "validate": "ok",
+    "violations": [],
+    "hashes": "ok",
+    "streams": {
+        "jobs": {
+            "rows": 2,
+            "rejects": 0
+        },
+        "poles": {
+            "rows": 3,
+            "rejects": 0
+        },
+        "p2_runner_status": {
+            "rows": 4,
+            "rejects": 0
+        },
+        "jobmaster_status": {
+            "rows": 1,
+            "rejects": 0
+        },
+        "worker_activity_status": {
+            "rows": 2,
+            "rejects": 0
+        },
+        "dailies": {
+            "rows": 1,
+            "rejects": 0
+        },
+        "packets_wanted": {
+            "rows": 1,
+            "rejects": 0
+        },
+        "gis_sources": {
+            "rows": 1,
+            "rejects": 0
+        },
+        "gis_features": {
+            "rows": 3,
+            "rejects": 0
+        },
+        "pge_violations": {
+            "rows": 1,
+            "rejects": 0
+        }
+    },
+    "skipped": [],
+    "receipts": 1,
+    "pins": {
+        "poles_set_checksum": "84d0b0db1d93b209ade25384c83069d1d475cc0e1eeb4e65b63f2200be533bf0",
+        "poles_set_checksum_note": "sha256(sorted distinct candidate_keys joined \"\\n\") = PMO NescPoleSnapshotService::keysChecksum = NESC PmoPoleSnapshotService::setChecksum"
+    },
+    "source": {
+        "jobs": "PMO app/Services/Nesc/NescSyncFeed.php:519-612 jobPayload() key order + :634-646 withBridgeAliases (job_number, verdict, nesc_scope, poles.count); inspectability = app/Services/Nesc/NescInspectability.php:117-128; cursor {updated_since, after_id} :290-303",
+        "poles": "PMO app/Services/Nesc/NescPoleSnapshotService.php:384-400 candidateRow, :404-418 recordRow, :432-463 violationsFromEvidence, ai_verdict/ai_rationale/ai from attachAiReviews; record wins on a shared candidate_key (:100-107); set_checksum :360-375 keysChecksum",
+        "p2_runner_status": "PMO app/Services/P2Runner/P2RunnerStatusFeed.php:55-60 reports, :61-66 notes, :67-72 rfas, :73-89 jobs (p2_tasks[] :82-88) with kind added; summary :90-99 in extras.p2_runner_summary",
+        "jobmaster_status": "PMO app/Services/JobMaster/JobMasterStatusFeed.php:39-47",
+        "worker_activity_status": "PMO app/Services/WorkerActivity/WaRunnerNescIngest.php:149-156 jobs / assignments with kind added; summary :159-164 in extras.worker_activity_summary",
+        "dailies": "NESC consumer app/Services/Pmo/PmoSyncService.php:201-227 (dailies_since row) + :258-283 work_items; PMO exporter to be written",
+        "packets_wanted": "PMO bridge action inspection_packets_wanted (list of job numbers) as one row per job",
+        "gis_sources": "PMO app/Services/Gis/GisReferenceLayers.php:26-60 catalog(); icons NescGisController::icons :198-223 in extras.gis_icons",
+        "gis_features": "PMO app/Http/Controllers/Api/NescGisController.php:319-333 lookup candidate (gis_layer_id -> layer_id, layer, source, ref_raw, lng, lat, properties <= 20 keys) + kind/feature_id/ref/geometry; PMO exporter to be written",
+        "pge_violations": "PMO app/Http/Controllers/Api/NescPgeController.php:123-148 violation() as payload, keyed by ticket; PMO exporter to be written"
+    },
+    "build": {
+        "recompute": true,
+        "sign": "valid"
+    }
+}

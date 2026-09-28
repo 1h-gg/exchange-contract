@@ -1,0 +1,31 @@
+{
+    "description": "A stream this contract does not know (foo_bar@1) is skipped with a warning, never rejected; the known stream still applies.",
+    "kind": "package",
+    "direction": "pmo_to_nesc",
+    "key_id": "texstar:comcast",
+    "scope": {
+        "tenant": "texstar",
+        "contract": "comcast",
+        "program": "comcast-nesc",
+        "instance": null
+    },
+    "scope_declared": true,
+    "verify": "ok",
+    "validate": "ok",
+    "violations": [],
+    "hashes": "ok",
+    "streams": {
+        "packets_wanted": {
+            "rows": 1,
+            "rejects": 0
+        }
+    },
+    "skipped": [
+        "foo_bar"
+    ],
+    "receipts": 0,
+    "build": {
+        "recompute": true,
+        "sign": "valid"
+    }
+}

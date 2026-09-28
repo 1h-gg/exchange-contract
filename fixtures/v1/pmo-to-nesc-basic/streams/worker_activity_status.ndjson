@@ -1,0 +1,2 @@
+{"kind":"job","job_number":"JB0002685018","nesc_job_id":1,"presence":"present","reason":"scope found","scope_of_work_id":9001,"scope_status":"Active","checked_at":"2026-09-01T12:00:00+00:00","scope":{"tenant":"texstar","contract":"comcast","program":"comcast-nesc","instance":null}}
+{"kind":"assignment","nesc_assignment_id":1,"job_number":"JB0002685018","state":"booked","reason":null,"task_number":"WA-77001","wa_task_id":"1234567","booked_at":"2026-09-01T12:00:00+00:00","error":null,"scope":{"tenant":"texstar","contract":"comcast","program":"comcast-nesc","instance":null}}

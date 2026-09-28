@@ -1,0 +1,260 @@
+{
+    "format": "texstar-exchange",
+    "version": 1,
+    "contract": "1.0.0",
+    "kind": "package",
+    "package_id": "7a2b1d3c-4e5f-4a6b-9c8d-0e1f2a3b4c5d",
+    "direction": "pmo_to_nesc",
+    "created_at": "2026-09-01T12:00:00+00:00",
+    "producer": {
+        "app": "pmo",
+        "version": "2026.09.27",
+        "instance": "pmo",
+        "contract": "1.0.0"
+    },
+    "scope": {
+        "tenant": "texstar",
+        "contract": "comcast",
+        "program": "comcast-nesc",
+        "instance": null
+    },
+    "cursors": {
+        "jobs": {
+            "from": {
+                "updated_since": "2026-09-01T00:00:00+00:00",
+                "after_id": null
+            },
+            "to": {
+                "updated_since": "2026-09-01T11:59:00+00:00",
+                "after_id": "JB0002685019"
+            }
+        },
+        "poles": {
+            "from": null,
+            "to": "84d0b0db1d93b209ade25384c83069d1d475cc0e1eeb4e65b63f2200be533bf0"
+        },
+        "p2_runner_status": {
+            "from": null,
+            "to": "v1:eyJyZXBvcnRzIjpbIjIwMjYtMDktMDFUMTI6MDA6MDArMDA6MDAiLDFdLCJub3RlcyI6WyIyMDI2LTA5LTAxVDEyOjAwOjAwKzAwOjAwIiw1MDFdLCJyZmFzIjpbIjIwMjYtMDktMDFUMTI6MDA6MDArMDA6MDAiLDkwMDFdLCJqb2JzIjpbIjIwMjYtMDktMDFUMTI6MDA6MDArMDA6MDAiLDFdfQ=="
+        },
+        "jobmaster_status": {
+            "from": null,
+            "to": "v1:WyIyMDI2LTA5LTAxVDEyOjAwOjAwKzAwOjAwIiwxXQ=="
+        },
+        "worker_activity_status": {
+            "from": null,
+            "to": "v1:eyJqb2JzIjpbIjIwMjYtMDktMDFUMTI6MDA6MDArMDA6MDAiLDFdLCJhc3NpZ25tZW50cyI6WyIyMDI2LTA5LTAxVDEyOjAwOjAwKzAwOjAwIiwxXX0="
+        },
+        "dailies": {
+            "from": null,
+            "to": {
+                "updated_at": "2026-09-01T12:00:00+00:00",
+                "daily": "FC-2026-09-01-0451"
+            }
+        }
+    },
+    "files": [
+        {
+            "path": "streams/jobs.ndjson",
+            "stream": "jobs",
+            "schema": "jobs@1",
+            "rows": 2,
+            "sha256": "69a8524a30781fae45e217160d671a025fcca38a0f2ce2902b074902693e7883",
+            "bytes": 5160,
+            "mode": "delta"
+        },
+        {
+            "path": "streams/poles.ndjson",
+            "stream": "poles",
+            "schema": "poles@1",
+            "rows": 3,
+            "sha256": "2cc39aab8f89f37422c92a0960cd60def1f887e1e50f620a8f3a93bcc106d6b9",
+            "bytes": 1895,
+            "mode": "full",
+            "set_checksum": "84d0b0db1d93b209ade25384c83069d1d475cc0e1eeb4e65b63f2200be533bf0",
+            "set_total": 3
+        },
+        {
+            "path": "streams/p2_runner_status.ndjson",
+            "stream": "p2_runner_status",
+            "schema": "p2_runner_status@1",
+            "rows": 4,
+            "sha256": "2de8dee46632972ccd31ee0dd0bcd939f20c8e4eee5988a52418cef6d9c12fa6",
+            "bytes": 2126,
+            "mode": "delta"
+        },
+        {
+            "path": "streams/jobmaster_status.ndjson",
+            "stream": "jobmaster_status",
+            "schema": "jobmaster_status@1",
+            "rows": 1,
+            "sha256": "826e8fd0ee60853fde908bf66a5bf336520e0c347e245b1cdffe385828d52fcd",
+            "bytes": 475,
+            "mode": "delta"
+        },
+        {
+            "path": "streams/worker_activity_status.ndjson",
+            "stream": "worker_activity_status",
+            "schema": "worker_activity_status@1",
+            "rows": 2,
+            "sha256": "9b4706c7985a9f93c516bacee4debef23d0017bcd428b577dd74bbf2e2a54dda",
+            "bytes": 579,
+            "mode": "delta"
+        },
+        {
+            "path": "streams/dailies.ndjson",
+            "stream": "dailies",
+            "schema": "dailies@1",
+            "rows": 1,
+            "sha256": "e24f5754164f7442864ebaa9d389169d050ab3a4832312624f76b165aebeb92c",
+            "bytes": 618,
+            "mode": "delta"
+        },
+        {
+            "path": "streams/packets_wanted.ndjson",
+            "stream": "packets_wanted",
+            "schema": "packets_wanted@1",
+            "rows": 1,
+            "sha256": "b2fc34c6a017273749c48a734c609949bf07e82b7bdb4bc013d86bb0e5a4b522",
+            "bytes": 121,
+            "mode": "full"
+        },
+        {
+            "path": "streams/gis_sources.ndjson",
+            "stream": "gis_sources",
+            "schema": "gis_sources@1",
+            "rows": 1,
+            "sha256": "5ad062e297db0c00f71d7d80822a0305b37d8fa94f83633715a6f7c89980c0c0",
+            "bytes": 333,
+            "mode": "full"
+        },
+        {
+            "path": "streams/gis_features.ndjson",
+            "stream": "gis_features",
+            "schema": "gis_features@1",
+            "rows": 3,
+            "sha256": "abd2c282f31884be3927db75e6f97f3669a653112731e67eea63fa739147c35c",
+            "bytes": 1099,
+            "mode": "full"
+        },
+        {
+            "path": "streams/pge_violations.ndjson",
+            "stream": "pge_violations",
+            "schema": "pge_violations@1",
+            "rows": 1,
+            "sha256": "dd3b6ace9d9d70cea9cccc9da8c8a4531f704725ed7527cfed10d618a2f55cea",
+            "bytes": 707,
+            "mode": "full"
+        }
+    ],
+    "blobs": [],
+    "receipts": [
+        {
+            "package_id": "4c5d6e7f-8a9b-4c0d-8e1f-2a3b4c5d6e7f",
+            "path": "receipt.json"
+        }
+    ],
+    "extras": {
+        "p2_runner_summary": {
+            "generated_at": "2026-09-01T12:00:00+00:00",
+            "dry_run": false,
+            "perf": {
+                "reports": {
+                    "is_write": true,
+                    "unit": "pole",
+                    "done": 120,
+                    "jobs_done": 40,
+                    "queued": 3,
+                    "jobs_queued": 2,
+                    "leased": 0,
+                    "staged": 1,
+                    "failed": 0,
+                    "parked": 0,
+                    "applied_15": 2,
+                    "applied_60": 9,
+                    "applied_24h": 61,
+                    "rate": "6.1",
+                    "rate_window": "60m",
+                    "eta_min": 30,
+                    "avg_s": "12.5",
+                    "fail_pct_24h": "0.0",
+                    "paused": false
+                }
+            },
+            "reports": {
+                "by_status": {
+                    "uploaded": 120,
+                    "pending": 3
+                },
+                "poles_uploaded": 120,
+                "jobs_with_reports": 40,
+                "uploaded_24h": 61
+            },
+            "notes": {
+                "posted_24h": 5,
+                "pending": 0
+            },
+            "rfa": {
+                "applied_24h": 3,
+                "pending": 1,
+                "parked": 0
+            },
+            "jobs": {
+                "ready": 12,
+                "waiting": 30,
+                "blocked": 2
+            },
+            "rfa_blocked_by": {
+                "permits": 2
+            },
+            "runners": [
+                {
+                    "name": "p2-runner-1",
+                    "version": "2026.09.20",
+                    "seen_min": 1,
+                    "pull_min": 1,
+                    "running": true,
+                    "phase": "idle",
+                    "message": null,
+                    "blocked": false,
+                    "processed": 61,
+                    "failures": 0
+                }
+            ],
+            "errors": [],
+            "feed": {
+                "reports": "2026-09-01T12:00:00+00:00",
+                "notes": "2026-09-01T12:00:00+00:00",
+                "rfas": "2026-09-01T12:00:00+00:00",
+                "jobs": "2026-09-01T12:00:00+00:00"
+            }
+        },
+        "worker_activity_summary": {
+            "jobs": {
+                "present": 40,
+                "missing": 3,
+                "unknown": 1
+            },
+            "assignments": {
+                "booked": 20,
+                "failed": 1,
+                "waiting": 2,
+                "staged": 0
+            },
+            "last_scan_at": "2026-09-01T12:00:00+00:00",
+            "crews_mapped": 6
+        },
+        "gis_icons": {
+            "pole": {
+                "label": "Pole",
+                "category": "utility",
+                "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 16 16\"><circle cx=\"8\" cy=\"8\" r=\"6\"/></svg>"
+            }
+        }
+    },
+    "signature": {
+        "alg": "HMAC-SHA256",
+        "key_id": "texstar:comcast",
+        "value": "786f5d505db3b32f8340d075236a48c44d108eff3335899f6212247a68c9b4a6"
+    }
+}

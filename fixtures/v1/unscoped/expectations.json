@@ -1,0 +1,29 @@
+{
+    "description": "No scope on the manifest or the rows: a v1 reader resolves Scope::UNSCOPED (texstar / comcast / comcast-nesc) and applies the package to program comcast-nesc.",
+    "kind": "package",
+    "direction": "nesc_to_pmo",
+    "key_id": "texstar:comcast",
+    "scope": {
+        "tenant": "texstar",
+        "contract": "comcast",
+        "program": "comcast-nesc",
+        "instance": null
+    },
+    "scope_declared": false,
+    "verify": "ok",
+    "validate": "ok",
+    "violations": [],
+    "hashes": "ok",
+    "streams": {
+        "readiness": {
+            "rows": 1,
+            "rejects": 0
+        }
+    },
+    "skipped": [],
+    "receipts": 0,
+    "build": {
+        "recompute": true,
+        "sign": "valid"
+    }
+}

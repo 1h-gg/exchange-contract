@@ -1,0 +1,29 @@
+{
+    "description": "kind=package with signature null: verify throws signature_missing (NESC reports rejected_code signature_invalid); the manifest schema itself allows null because kind=rows uses it.",
+    "kind": "package",
+    "direction": "nesc_to_pmo",
+    "key_id": null,
+    "scope": {
+        "tenant": "texstar",
+        "contract": "comcast",
+        "program": "comcast-nesc",
+        "instance": null
+    },
+    "scope_declared": true,
+    "verify": "signature_missing",
+    "validate": "ok",
+    "violations": [],
+    "hashes": "ok",
+    "streams": {
+        "readiness": {
+            "rows": 1,
+            "rejects": 0
+        }
+    },
+    "skipped": [],
+    "receipts": 0,
+    "build": {
+        "recompute": true,
+        "sign": "none"
+    }
+}

@@ -1,0 +1,172 @@
+{
+    "format": "texstar-exchange",
+    "version": 1,
+    "contract": "1.0.0",
+    "kind": "package",
+    "package_id": "6e1f0c2a-9b3d-4c5e-8f70-1a2b3c4d5e6f",
+    "direction": "nesc_to_pmo",
+    "created_at": "2026-09-01T12:00:00+00:00",
+    "producer": {
+        "app": "nesc",
+        "version": "2026.09.27",
+        "instance": "nescdev",
+        "contract": "1.0.0"
+    },
+    "scope": {
+        "tenant": "texstar",
+        "contract": "comcast",
+        "program": "comcast-nesc",
+        "instance": null
+    },
+    "cursors": {
+        "readiness": {
+            "from": null,
+            "to": "6e1f0c2a-9b3d-4c5e-8f70-1a2b3c4d5e6f"
+        },
+        "readiness_feed": {
+            "from": null,
+            "to": "6e1f0c2a-9b3d-4c5e-8f70-1a2b3c4d5e6f"
+        },
+        "inspection_reports": {
+            "from": null,
+            "to": "6e1f0c2a-9b3d-4c5e-8f70-1a2b3c4d5e6f"
+        },
+        "inspection_packets": {
+            "from": null,
+            "to": "6e1f0c2a-9b3d-4c5e-8f70-1a2b3c4d5e6f"
+        },
+        "review_decisions": {
+            "from": null,
+            "to": "6e1f0c2a-9b3d-4c5e-8f70-1a2b3c4d5e6f"
+        },
+        "observations": {
+            "from": null,
+            "to": "6e1f0c2a-9b3d-4c5e-8f70-1a2b3c4d5e6f"
+        },
+        "worker_activity": {
+            "from": null,
+            "to": "6e1f0c2a-9b3d-4c5e-8f70-1a2b3c4d5e6f"
+        },
+        "external_refs": {
+            "from": null,
+            "to": "6e1f0c2a-9b3d-4c5e-8f70-1a2b3c4d5e6f"
+        }
+    },
+    "files": [
+        {
+            "path": "streams/readiness.ndjson",
+            "stream": "readiness",
+            "schema": "readiness@1",
+            "rows": 1,
+            "sha256": "c2bd8a48ed528c1ad2a7b42ac2cdc0a779984eaba2ce610e735d26546c89afc2",
+            "bytes": 2035,
+            "mode": "delta"
+        },
+        {
+            "path": "streams/readiness_feed.ndjson",
+            "stream": "readiness_feed",
+            "schema": "readiness_feed@1",
+            "rows": 1,
+            "sha256": "1c1bd7710955e8b9fa542ce2a587fd6d7825ae298a5ac3b35539eb4b928e1219",
+            "bytes": 430,
+            "mode": "full"
+        },
+        {
+            "path": "streams/inspection_reports.ndjson",
+            "stream": "inspection_reports",
+            "schema": "inspection_reports@1",
+            "rows": 2,
+            "sha256": "da553b6c7e3a25f8d85cb99a896e3b2592e41059b89f6e56f7d4e111d3498cb2",
+            "bytes": 1404,
+            "mode": "delta"
+        },
+        {
+            "path": "streams/inspection_packets.ndjson",
+            "stream": "inspection_packets",
+            "schema": "inspection_packets@1",
+            "rows": 1,
+            "sha256": "9233648707a49276c33c9867ec5a2191341221928e16215aee91672d5c57ab69",
+            "bytes": 1300,
+            "mode": "delta"
+        },
+        {
+            "path": "streams/review_decisions.ndjson",
+            "stream": "review_decisions",
+            "schema": "review_decisions@1",
+            "rows": 2,
+            "sha256": "28d4abc16f88d113411538c472f7d02707c467d72130b34db6f7e84c91e48733",
+            "bytes": 909,
+            "mode": "delta"
+        },
+        {
+            "path": "streams/observations.ndjson",
+            "stream": "observations",
+            "schema": "observations@1",
+            "rows": 2,
+            "sha256": "6a64ccfddd743a68f4fc0c021f5acb19f64c8d9bddb98b3e99146a765e55d3be",
+            "bytes": 832,
+            "mode": "delta"
+        },
+        {
+            "path": "streams/worker_activity.ndjson",
+            "stream": "worker_activity",
+            "schema": "worker_activity@1",
+            "rows": 4,
+            "sha256": "eaf6a4ebd10449d4b2b32d88a851b4f2cac84f67ba0cd93bf780331ca68a1bab",
+            "bytes": 777,
+            "mode": "delta"
+        },
+        {
+            "path": "streams/external_refs.ndjson",
+            "stream": "external_refs",
+            "schema": "external_refs@1",
+            "rows": 7,
+            "sha256": "349f3292312b4b72e1039cc95729f8a128e3ecd418f65318b0b2a38a45de1707",
+            "bytes": 3780,
+            "mode": "delta"
+        }
+    ],
+    "blobs": [
+        {
+            "sha256": "63cafc5a4589d91e6e65a3aa50db26f883dfdc84bb08e84456d0f0432ab655b8",
+            "bytes": 46,
+            "mime": "application/pdf",
+            "path": "files/63cafc5a4589d91e6e65a3aa50db26f883dfdc84bb08e84456d0f0432ab655b8"
+        },
+        {
+            "sha256": "6a25b77960e1cffe1e7a42747b7e8ab34bfd66e3672f3a51deea4efed443fa6a",
+            "bytes": 46,
+            "mime": "application/pdf",
+            "path": "files/6a25b77960e1cffe1e7a42747b7e8ab34bfd66e3672f3a51deea4efed443fa6a"
+        }
+    ],
+    "receipts": [
+        {
+            "package_id": "5b6c7d8e-9f0a-4b1c-8d2e-3f4a5b6c7d8e",
+            "path": "receipt.json"
+        }
+    ],
+    "extras": {
+        "readiness_feed": {
+            "jobs_tracked": 1,
+            "jobs_pushed": 1,
+            "jobs_waiting_live": 0,
+            "jobs_waiting_backlog": 0,
+            "jobs_errored": 0,
+            "pdfs_pending": 0,
+            "pdfs_rendered": 0,
+            "pdfs_pushed": 2,
+            "pdfs_failed": 0,
+            "pdfs_pending_backlog": 0,
+            "pdfs_pending_jobs": 0,
+            "last_pushed_at": "2026-09-01 12:00:00",
+            "backlog_window": "20:00–06:00 PT, hourly",
+            "generated_at": "2026-09-01T12:00:00+00:00"
+        }
+    },
+    "signature": {
+        "alg": "HMAC-SHA256",
+        "key_id": "texstar:comcast",
+        "value": "4dcdf67b66c17d7badaef6d0da613bb0a2c35981cab24cb8faa01a56b296f2c1"
+    }
+}

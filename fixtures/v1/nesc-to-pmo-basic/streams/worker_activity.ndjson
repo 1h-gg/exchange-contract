@@ -1,0 +1,4 @@
+{"kind":"job","job_number":"JB0002685018","nesc_job_id":1,"name":null,"stage":"estimating","wanted":true,"scope":{"tenant":"texstar","contract":"comcast","program":"comcast-nesc","instance":null}}
+{"kind":"job","job_number":"JB0002685019","wanted":false,"scope":{"tenant":"texstar","contract":"comcast","program":"comcast-nesc","instance":null}}
+{"kind":"assignment","nesc_assignment_id":1,"job_number":"JB0002685018","nesc_job_id":1,"contractor_id":7,"contractor_name":"Crew Co","first_inspected_at":"2026-09-01T12:00:00+00:00","status":"pending","scope":{"tenant":"texstar","contract":"comcast","program":"comcast-nesc","instance":null}}
+{"kind":"contractor","id":7,"name":"Crew Co","scope":{"tenant":"texstar","contract":"comcast","program":"comcast-nesc","instance":null}}

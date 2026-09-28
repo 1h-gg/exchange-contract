@@ -1,0 +1,73 @@
+{
+    "description": "NESC -> PMO: every nesc_to_pmo stream from the frozen P2ContractPinTest fixture (Carbon 2026-09-01 12:00:00), signed with texstar:comcast, plus NESC's receipt for the PMO package p-0001.",
+    "kind": "package",
+    "direction": "nesc_to_pmo",
+    "key_id": "texstar:comcast",
+    "scope": {
+        "tenant": "texstar",
+        "contract": "comcast",
+        "program": "comcast-nesc",
+        "instance": null
+    },
+    "scope_declared": true,
+    "verify": "ok",
+    "validate": "ok",
+    "violations": [],
+    "hashes": "ok",
+    "streams": {
+        "readiness": {
+            "rows": 1,
+            "rejects": 0
+        },
+        "readiness_feed": {
+            "rows": 1,
+            "rejects": 0
+        },
+        "inspection_reports": {
+            "rows": 2,
+            "rejects": 0
+        },
+        "inspection_packets": {
+            "rows": 1,
+            "rejects": 0
+        },
+        "review_decisions": {
+            "rows": 2,
+            "rejects": 0
+        },
+        "observations": {
+            "rows": 2,
+            "rejects": 0
+        },
+        "worker_activity": {
+            "rows": 4,
+            "rejects": 0
+        },
+        "external_refs": {
+            "rows": 7,
+            "rejects": 0
+        }
+    },
+    "skipped": [],
+    "receipts": 1,
+    "pins": {
+        "readiness_hash": "5dd819e65ca4a7363f3fd692ad543f4d51a7ba6cf94c582024d8307c8fd7975a",
+        "readiness_hash_note": "sha256(json_encode(row)) of streams/readiness.ndjson row 0 after removing scope and tasks[].system/external_task_id = P2ContractPinTest::READINESS_HASH (the push_p2_job_states row incl. backlog)",
+        "packet_fingerprint": "0661230901bb5509b03b1af11edf14bd2160a9415a865223402c2b6af3a9a097",
+        "packet_fingerprint_note": "sha256(json_encode(row, UNESCAPED_SLASHES|UNESCAPED_UNICODE)) of streams/inspection_packets.ndjson row 0 minus scope = P2ContractPinTest::PACKET_FINGERPRINT"
+    },
+    "source": {
+        "readiness": "NESC tests/Feature/P2/P2ContractPinTest.php:53-58 PAYLOAD_KEYS (+backlog, app/Console/Commands/PushP2Readiness.php:83) via tests/Support/P2FrozenFixture.php::readinessFixture; tasks[] = TASK_KEYS :60 + system/external_task_id (package rows only)",
+        "readiness_feed": "NESC app/Services/P2/P2ReadinessService.php:65-87 feedSummary()",
+        "inspection_reports": "NESC P2ContractPinTest.php:73-77 REPORT_KEYS; content_base64 null, PDF bytes under files/<sha256> (stub renderer, tests/Support/P2FrozenFixture.php::freezeP2Contract)",
+        "inspection_packets": "NESC P2ContractPinTest.php:79-87 PACKET_KEYS via P2FrozenFixture::packetFixture (InspectionPacketOutboxService::packet)",
+        "review_decisions": "NESC app/Services/Pmo/PmoReviewPushService.php:43-53 (confirm/reject) and :91-101 (merged); external_decision_id :116-119",
+        "observations": "NESC app/Services/Pmo/PmoSyncService.php:312-338 pushObservations + external_id nesc:obs:{jb}:{field}:{sha8(value)}",
+        "worker_activity": "NESC app/Services/WorkerActivity/WorkerActivityRunnerSync.php:51-63 (jobs/unwanted, assignments, contractors) with kind added",
+        "external_refs": "NESC app/Services/External/MirrorProjector.php:64-85 task, :89-115 jobmaster, :118-141 p2Runner, :144-160 waPresence, :163-181 waBooking, :190-218 pmo, :227-239 sphere; entity_key per README"
+    },
+    "build": {
+        "recompute": true,
+        "sign": "valid"
+    }
+}

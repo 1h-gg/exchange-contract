@@ -1,0 +1,27 @@
+{
+    "description": "files[].path is \"streams/../readiness.ndjson\" and the zip carries that entry: PathDiscipline reports bad_path on the manifest and unexpected_entry for the zip entry before any stream is read; entry names are never filesystem path components.",
+    "kind": "package",
+    "direction": "nesc_to_pmo",
+    "key_id": "texstar:comcast",
+    "scope": {
+        "tenant": "texstar",
+        "contract": "comcast",
+        "program": "comcast-nesc",
+        "instance": null
+    },
+    "scope_declared": true,
+    "verify": "ok",
+    "validate": "bad_path",
+    "violations": [
+        "bad_path",
+        "unexpected_entry"
+    ],
+    "hashes": "skipped",
+    "streams": {},
+    "skipped": [],
+    "receipts": 0,
+    "build": {
+        "recompute": false,
+        "sign": "valid"
+    }
+}

@@ -1,0 +1,37 @@
+{
+    "format": "texstar-exchange",
+    "version": 1,
+    "contract": "1.0.0",
+    "kind": "rows",
+    "package_id": "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+    "direction": "pmo_to_nesc",
+    "created_at": "2026-09-01T12:00:00+00:00",
+    "producer": {
+        "app": "pmo",
+        "version": "2026.09.27",
+        "instance": "pmo",
+        "contract": "1.0.0"
+    },
+    "scope": {
+        "tenant": "texstar",
+        "contract": "comcast",
+        "program": "comcast-nesc",
+        "instance": null
+    },
+    "cursors": [],
+    "files": [
+        {
+            "path": "streams/packets_wanted.ndjson",
+            "stream": "packets_wanted",
+            "schema": "packets_wanted@1",
+            "rows": 2,
+            "sha256": "40c9e0754ad3c5603bca169d769faf19729545ebc7f068035df34bbf70ca97b6",
+            "bytes": 242,
+            "mode": "full"
+        }
+    ],
+    "blobs": [],
+    "receipts": [],
+    "extras": [],
+    "signature": null
+}

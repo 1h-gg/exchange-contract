@@ -1,0 +1,26 @@
+{
+    "description": "manifest.version 2 against a MAJOR 1 reader: validateManifest() reports unsupported_version and no stream is read (the signature still verifies).",
+    "kind": "package",
+    "direction": "nesc_to_pmo",
+    "key_id": "texstar:comcast",
+    "scope": {
+        "tenant": "texstar",
+        "contract": "comcast",
+        "program": "comcast-nesc",
+        "instance": null
+    },
+    "scope_declared": true,
+    "verify": "ok",
+    "validate": "unsupported_version",
+    "violations": [
+        "unsupported_version"
+    ],
+    "hashes": "ok",
+    "streams": {},
+    "skipped": [],
+    "receipts": 0,
+    "build": {
+        "recompute": true,
+        "sign": "valid"
+    }
+}

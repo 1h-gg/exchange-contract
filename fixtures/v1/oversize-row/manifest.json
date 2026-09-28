@@ -1,0 +1,46 @@
+{
+    "format": "texstar-exchange",
+    "version": 1,
+    "contract": "1.0.0",
+    "kind": "package",
+    "package_id": "9c0d1e2f-3a4b-4c5d-8e6f-8a9b0c1d2e3f",
+    "direction": "nesc_to_pmo",
+    "created_at": "2026-09-01T12:00:00+00:00",
+    "producer": {
+        "app": "nesc",
+        "version": "2026.09.27",
+        "instance": "nescdev",
+        "contract": "1.0.0"
+    },
+    "scope": {
+        "tenant": "texstar",
+        "contract": "comcast",
+        "program": "comcast-nesc",
+        "instance": null
+    },
+    "cursors": {
+        "readiness": {
+            "from": null,
+            "to": "9c0d1e2f-3a4b-4c5d-8e6f-8a9b0c1d2e3f"
+        }
+    },
+    "files": [
+        {
+            "path": "streams/readiness.ndjson",
+            "stream": "readiness",
+            "schema": "readiness@1",
+            "rows": 3,
+            "sha256": "847b7d25466344a64c2e406257c6a34d3b360833761af6d4e4108a7a3a66e25e",
+            "bytes": 2103255,
+            "mode": "delta"
+        }
+    ],
+    "blobs": [],
+    "receipts": [],
+    "extras": [],
+    "signature": {
+        "alg": "HMAC-SHA256",
+        "key_id": "texstar:comcast",
+        "value": "1d3867d8e97dd0cfbba2741d7cd06819ddf7f9c5be0426ab4fdc5d4a014ec73c"
+    }
+}

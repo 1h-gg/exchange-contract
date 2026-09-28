@@ -1,0 +1,1 @@
+{"id":3,"name":"PGE Poles","sort":1,"layers":[{"id":31,"name":"Distribution poles","geometry_type":"point","service_type":"FeatureServer","queryable":true,"role":"poles","ref_property":"POLE_TAG","category":"utility","subcategory":"poles"}],"scope":{"tenant":"texstar","contract":"comcast","program":"comcast-nesc","instance":null}}
