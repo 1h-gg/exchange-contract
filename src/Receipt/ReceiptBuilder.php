@@ -10,13 +10,20 @@ use Texstar\Exchange\Dto\Scope;
 use Texstar\Exchange\Dto\StreamReceipt;
 
 /**
- * Accumulates per-stream outcomes for one package and builds the {@see Receipt}. "Accepted" is every row
- * of the stream not listed in rejected_rows; rejects are keyed by (RowKey, seq), never by batch index.
+ * Accumulates per-stream outcomes for one package and builds the {@see Receipt}. Every reject() counts
+ * toward the stream's `rejected` (accepted = received - rejected); the first MAX_LISTED_REJECTS per stream
+ * are listed in rejected_rows, keyed by (RowKey, seq), never by batch index, and the rest are counted in
+ * `rejected_rows_omitted`, so one schema drift cannot grow receipt.json past Contract::MAX_MANIFEST_BYTES.
  */
 final class ReceiptBuilder
 {
-    /** @var array<string, array{received: int, rejected_rows: list<array{key: string, seq: int, code: string, message: string}>, cursor_to: mixed, applied_at: ?string}> */
+    /** Most rejected rows listed per stream (1.2.0); the rest are counted, not listed. */
+    public const MAX_LISTED_REJECTS = 1000;
+
+    /** @var array<string, array{received: int, rejected: int, rejected_rows: list<array{key: string, seq: int, code: string, message: string}>, cursor_to: mixed, applied_at: ?string}> */
     private array $streams = [];
+
+    private int $maxListed = self::MAX_LISTED_REJECTS;
 
     private ?string $status = null;
 
@@ -39,7 +46,19 @@ final class ReceiptBuilder
 
     public function reject(string $stream, string $key, int $seq, string $code, string $message): self
     {
-        $this->entry($stream)['rejected_rows'][] = ['key' => $key, 'seq' => $seq, 'code' => $code, 'message' => mb_substr($message, 0, 500)];
+        $entry = &$this->entry($stream);
+        $entry['rejected']++;
+        if (count($entry['rejected_rows']) < $this->maxListed) {
+            $entry['rejected_rows'][] = ['key' => $key, 'seq' => $seq, 'code' => $code, 'message' => mb_substr($message, 0, 500)];
+        }
+
+        return $this;
+    }
+
+    /** List at most `$max` rejected rows per stream (default MAX_LISTED_REJECTS); set before the first reject(). */
+    public function listAtMost(int $max): self
+    {
+        $this->maxListed = max(0, $max);
 
         return $this;
     }
@@ -73,8 +92,11 @@ final class ReceiptBuilder
         $received = 0;
         $rejected = 0;
         foreach ($this->streams as $name => $s) {
-            $n = count($s['rejected_rows']);
-            $streams[$name] = new StreamReceipt($s['received'], max(0, $s['received'] - $n), $n, $n === 0, $s['rejected_rows'], $s['cursor_to'], $s['applied_at']);
+            $n = $s['rejected'];
+            $streams[$name] = new StreamReceipt(
+                $s['received'], max(0, $s['received'] - $n), $n, $n === 0, $s['rejected_rows'], $s['cursor_to'], $s['applied_at'],
+                rejectedRowsOmitted: $n - count($s['rejected_rows']),
+            );
             $received += $s['received'];
             $rejected += $n;
         }
@@ -105,10 +127,10 @@ final class ReceiptBuilder
         return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($b), 4));
     }
 
-    /** @return array{received: int, rejected_rows: list<array{key: string, seq: int, code: string, message: string}>, cursor_to: mixed, applied_at: ?string} */
+    /** @return array{received: int, rejected: int, rejected_rows: list<array{key: string, seq: int, code: string, message: string}>, cursor_to: mixed, applied_at: ?string} */
     private function &entry(string $stream): array
     {
-        $this->streams[$stream] ??= ['received' => 0, 'rejected_rows' => [], 'cursor_to' => null, 'applied_at' => null];
+        $this->streams[$stream] ??= ['received' => 0, 'rejected' => 0, 'rejected_rows' => [], 'cursor_to' => null, 'applied_at' => null];
 
         return $this->streams[$stream];
     }

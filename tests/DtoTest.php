@@ -130,6 +130,46 @@ final class DtoTest extends TestCase
         $this->assertSame('unpacked_too_large', $forced->toArray()['message']);
     }
 
+    public function test_receipt_builder_lists_at_most_the_cap_and_counts_every_reject(): void
+    {
+        $b = new ReceiptBuilder('p', new Producer('nesc'), Scope::unscoped());
+        $b->received('jobs', 5000)->received('poles', 3);
+        for ($i = 0; $i < 4000; $i++) {
+            $b->reject('jobs', 'JB'.$i, $i, 'schema_invalid', 'drift');
+        }
+        $b->reject('poles', 'k', 0, 'x', 'y');
+        $receipt = $b->build();
+
+        $jobs = $receipt->streams['jobs'];
+        $this->assertSame(4000, $jobs->rejected);
+        $this->assertSame(1000, $jobs->accepted);
+        $this->assertCount(ReceiptBuilder::MAX_LISTED_REJECTS, $jobs->rejectedRows);
+        $this->assertSame(3000, $jobs->rejectedRowsOmitted);
+        $this->assertFalse($jobs->listComplete());
+        $this->assertSame(3000, $jobs->toArray()['rejected_rows_omitted']);
+        $this->assertTrue($receipt->streams['poles']->listComplete());
+        $this->assertArrayNotHasKey('rejected_rows_omitted', $receipt->streams['poles']->toArray(), 'written only when > 0, so 1.1.0 receipts hash the same');
+        $this->assertSame('partial', $receipt->status);
+
+        $again = Receipt::fromArray(json_decode(json_encode($receipt->toArray()), true));
+        $this->assertSame(3000, $again->streams['jobs']->rejectedRowsOmitted);
+        $this->assertSame($receipt->toArray(), $again->toArray());
+
+        $trimmed = $receipt->withListedRejects(10);
+        $this->assertCount(10, $trimmed->streams['jobs']->rejectedRows);
+        $this->assertSame(3990, $trimmed->streams['jobs']->rejectedRowsOmitted);
+        $this->assertSame(4000, $trimmed->streams['jobs']->rejected);
+        $this->assertSame($receipt->streams['poles'], $trimmed->streams['poles']);
+
+        $all = (new ReceiptBuilder('p', new Producer('nesc'), Scope::unscoped()))->listAtMost(0)->received('jobs', 2)->reject('jobs', 'a', 0, 'x', 'y')->reject('jobs', 'b', 1, 'x', 'y')->build();
+        $this->assertSame([], $all->streams['jobs']->rejectedRows);
+        $this->assertSame('rejected', $all->status, 'status follows the count, not the list');
+
+        $validator = new \Texstar\Exchange\Schema\SchemaValidator;
+        $schema = json_decode((string) file_get_contents(dirname(__DIR__).'/schemas/v1/receipt.schema.json'), true);
+        $this->assertSame([], $validator->validate($jobs->toArray(), $schema['$defs']['stream_receipt']));
+    }
+
     public function test_update_op_and_row_verdict(): void
     {
         $op = UpdateOp::fromArray(['id' => 'u1', 'op' => 'update', 'entity' => 'job', 'key' => 'JB000001', 'field' => 'folder_link', 'value' => 'https://x', 'reason' => 'r', 'program' => null, 'origin' => 'smartsheet', 'origin_ref' => ['sheet' => 1], 'extra_key' => 1]);

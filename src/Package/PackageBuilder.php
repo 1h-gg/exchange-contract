@@ -192,17 +192,34 @@ final class PackageBuilder
         if ($receipts === []) {
             return;
         }
-        $document = ['format' => Contract::RECEIPT_FORMAT, 'version' => Contract::MAJOR, 'receipts' => []];
         $packageIds = [];
+        $longest = 0;
         foreach ($receipts as $receipt) {
             if (! $receipt instanceof Receipt) {
                 throw new PackageException('addReceipts() takes Receipt DTOs', 'receipt_invalid');
             }
-            $document['receipts'][] = $receipt->toArray();
             $packageIds[] = $receipt->packageId;
+            $longest = max($longest, $receipt->longestRejectList());
+        }
+        // A reader refuses a receipt.json over MAX_MANIFEST_BYTES (and with it the whole package), so an
+        // oversize document lists fewer rejected rows per stream — halving until it fits — and counts the
+        // rest in rejected_rows_omitted. The counts, and so what the producer settles, never change.
+        $cap = null;
+        while (true) {
+            $document = ['format' => Contract::RECEIPT_FORMAT, 'version' => Contract::MAJOR, 'receipts' => []];
+            foreach ($receipts as $receipt) {
+                $document['receipts'][] = ($cap === null ? $receipt : $receipt->withListedRejects($cap))->toArray();
+            }
+            $bytes = json_encode($document, self::ROW_FLAGS);
+            if (strlen($bytes) <= Contract::MAX_MANIFEST_BYTES) {
+                break;
+            }
+            if ($cap === 0 || $longest === 0) {
+                throw new PackageException(sprintf('receipt.json is %d bytes even with no rejected rows listed (limit %d); carry fewer receipts', strlen($bytes), Contract::MAX_MANIFEST_BYTES), 'receipt_too_large');
+            }
+            $cap = intdiv($cap ?? $longest, 2);
         }
         // receipt.json is bound into the signed manifest by its hash and length, like a stream file.
-        $bytes = json_encode($document, self::ROW_FLAGS);
         $sha = hash('sha256', $bytes);
         foreach ($packageIds as $packageId) {
             $this->receipts[] = new ReceiptRef($packageId, Contract::RECEIPT_ENTRY, $sha, strlen($bytes));

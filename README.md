@@ -53,7 +53,7 @@ from validated fields only.
 ### Manifest
 
 ```
-format: "texstar-exchange"          version: 1 (reader accepts == its MAJOR)      contract: "1.1.0"
+format: "texstar-exchange"          version: 1 (reader accepts == its MAJOR)      contract: "1.2.0"
 kind: "package" | "rows"            package_id: uuid v4                            direction: nesc_to_pmo | pmo_to_nesc
 created_at: ISO-8601                producer: {app: nesc|pmo, version, instance, contract}
 scope: {tenant, contract, program, instance|null}   OPTIONAL — absent => Scope::UNSCOPED (texstar/comcast/comcast-nesc)
@@ -125,12 +125,20 @@ set, or every row rejected) does not advance the producer's cursor; the set trav
 ### Receipt
 
 `{format: "texstar-exchange-receipt", version: 1, package_id, receipt_id, produced_at, producer, scope,
-streams: {<stream>: {received, accepted, rejected, accepted_all, rejected_rows: [{key, seq, code, message}], cursor_to, applied_at, applied?, refused?}},
+streams: {<stream>: {received, accepted, rejected, accepted_all, rejected_rows: [{key, seq, code, message}], rejected_rows_omitted?, cursor_to, applied_at, applied?, refused?}},
 status: applied|rejected|partial, message?}`. `applied` (boolean) and `refused` (string|null, 1.1.0,
 optional): a stream with `applied: false` or a non-null `refused` had nothing applied; the producer
 must not advance its cursor. `receipt.json` inside a package wraps a list:
-`{format, version, receipts: [...]}`. "Accepted" is every row of the stream not listed in
-`rejected_rows`; `seq` is the 0-based line in the stream file. `key` is `""` when the line could not be
+`{format, version, receipts: [...]}`. `rejected` is the authoritative count and `accepted =
+received - rejected`. `rejected_rows` lists at most 1,000 rejects per stream
+(`ReceiptBuilder::MAX_LISTED_REJECTS`, 1.2.0) and `PackageBuilder::addReceipts()` lists fewer — halving
+per stream until receipt.json fits under 4 MiB (`Contract::MAX_MANIFEST_BYTES`, the reader's limit) —
+so one schema drift can never make a receipt refuse the next package. The rest are counted in
+`rejected_rows_omitted` (integer, written only when > 0). When the list is complete
+(`StreamReceipt::listComplete()`: nothing omitted and `count(rejected_rows) = rejected`), "accepted" is
+every row of the stream not listed in `rejected_rows`. When it is not, a producer that settles per row
+settles the listed rejects and keeps every unlisted row of the stream pending, so those rows travel
+again. `seq` is the 0-based line in the stream file. `key` is `""` when the line could not be
 parsed or keyed; `seq` still addresses it. The row codes NESC writes are `row_too_large`,
 `invalid_json`, `schema_invalid` and `row_key` (a row that cannot be keyed for its stream), plus the
 consumer's own refusals. PMO also writes `unknown_candidate`, `unknown_job`, `invalid_job_number`,
@@ -188,7 +196,8 @@ visible only on `GET /inbound/{uuid}`, and they never claim their manifest's `pa
    for a package id no `receipts[]` entry declares is ignored (`PackageReader::receipts()` does both).
 4. **Every stream of a verified package appears in the receipt** — accepted, rejected per row, or the
    whole stream refused — with `received` equal to the rows the package carried in it and
-   `accepted + rejected = received`. A producer settles NOTHING in a stream whose counts do not add
+   `accepted + rejected = received` (`rejected` counts every reject, listed or omitted; see
+   [Receipt](#receipt)). A producer settles NOTHING in a stream whose counts do not add
    up (it keeps those rows pending), and a stream the receipt omits stays pending: omitting one means
    it is sent again. Streams with no ingest on the receiving side (`external_refs`, `readiness_feed`
    on PMO today) are still receipted: store them or accept-and-drop them, but answer for them.
@@ -565,16 +574,30 @@ both forms.
 
 ## Changelog
 
-### Unreleased (1.1.x, reference client only)
+### 1.2.0 (2026-09-28)
 
+Additive, plus one schema correction; manifest `version` / `MAJOR` stays 1. `Contract::VERSION` is
+1.2.0 so `producer.contract` tells a peer on the corrected `p2_runner_status` schema from one on
+1.1.0 (ed04328), which rejects every PMO job row with a `target_task` as `schema_invalid`.
+
+- **Wire schema change:** `p2_runner_status.target_task` is typed `object|null` (`{record_id, name,
+  type, status, hold}`, what PMO stores and NESC's mirror keeps) instead of `string|null`. The string
+  type was a skeleton mistake: the first live round trip rejected 2,668 of PMO's 4,099 job rows
+  `schema_invalid`. The `pmo-to-nesc-basic` fixture now ships the object and is re-signed. Both apps
+  must run 1.2.0 before PMO's first production `pmo_to_nesc` build.
+- **Receipt size bound:** `receipt.schema.json` `$defs.stream_receipt` gains optional
+  `rejected_rows_omitted` (integer). `ReceiptBuilder` lists at most 1,000 rejected rows per stream
+  (`MAX_LISTED_REJECTS`, `listAtMost()`) and counts the rest; `rejected` is always the full count.
+  `PackageBuilder::addReceipts()` halves the per-stream listing until receipt.json fits under
+  `MAX_MANIFEST_BYTES` and throws `receipt_too_large` only if it cannot fit with nothing listed.
+  Before this a receipt with ~30k rejects (about 141 bytes each) passed the reader's 4 MiB limit and
+  every later package carrying it was refused `package_too_large`. `StreamReceipt::listComplete()`
+  tells a consumer whether unlisted rows may be treated as accepted; NESC's receipt applier keeps the
+  unlisted rows of an incomplete list pending.
 - `bin/exchange sync` copies the report files a package references but does not carry
   (`HEAD`/`GET`/`PUT /files/{sha256}`) before the upload, and gains `--no-files`. Found in the first
   live nescdev ⇄ pmotest round trip: without it every report row was rejected `blob_missing`. The wire
-  contract does not change.
-- `p2_runner_status.target_task` is typed `object|null` (`{record_id, name, type, status, hold}`, what
-  PMO stores and NESC's mirror keeps) instead of `string|null`. The string type was a skeleton mistake:
-  the first live round trip rejected 2,668 of PMO's 4,099 job rows `schema_invalid`. The
-  `pmo-to-nesc-basic` fixture now ships the object and is re-signed.
+  contract does not change (reference client only).
 
 ### 1.1.0 (2026-09-28)
 

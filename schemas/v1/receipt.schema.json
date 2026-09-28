@@ -115,6 +115,7 @@
                 },
                 "rejected_rows": {
                     "type": "array",
+                    "description": "Up to `rejected` entries; see rejected_rows_omitted.",
                     "items": {
                         "type": "object",
                         "required": [
@@ -140,6 +141,11 @@
                             }
                         }
                     }
+                },
+                "rejected_rows_omitted": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "1.2.0: rejected rows counted in `rejected` but not listed in rejected_rows (at most 1,000 are listed per stream, fewer when receipt.json must shrink under 4 MiB). When > 0 (or count(rejected_rows) < rejected), a consumer must not treat an unlisted row as accepted."
                 },
                 "cursor_to": {
                     "description": "Opaque; echoed to the producer."

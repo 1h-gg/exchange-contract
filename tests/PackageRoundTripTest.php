@@ -510,6 +510,68 @@ final class PackageRoundTripTest extends TestCase
         $this->assertSame(['1f3a1b2c-4d5e-4f60-8a71-8293a4b5c6d7'], $ids);
     }
 
+    public function test_a_receipt_with_40k_rejects_round_trips_under_the_reader_limit(): void
+    {
+        // Two undelivered receipts, each answering a package whose rows a schema drift mostly rejected.
+        $receipts = [];
+        foreach (['1f3a1b2c-4d5e-4f60-8a71-8293a4b5c6d7', '2f3a1b2c-4d5e-4f60-8a71-8293a4b5c6d7'] as $n => $id) {
+            $rb = (new ReceiptBuilder($id, new Producer('pmo'), Scope::unscoped()))->listAtMost(PHP_INT_MAX);
+            foreach (['jobs' => 40000, 'poles' => 9000] as $stream => $rejects) {
+                $rb->received($stream, $rejects + 10);
+                for ($i = 0; $i < $rejects; $i++) {
+                    $rb->reject($stream, 'JB'.str_pad((string) $i, 10, '0', STR_PAD_LEFT), $i, 'schema_invalid', '$.target_task: expected type string|null, got object');
+                }
+            }
+            $receipts[] = $rb->build();
+        }
+        $this->assertGreaterThan(Contract::MAX_MANIFEST_BYTES, strlen(json_encode(array_map(fn ($r) => $r->toArray(), $receipts))), 'uncapped, receipt.json would pass the reader limit');
+
+        $path = $this->tempPath();
+        $b = PackageBuilder::open($path, $this->draft());
+        $b->addStreamRows('readiness', [$this->readinessRow()]);
+        $b->addReceipts($receipts);
+        $b->finalize(new Signer, $this->ring(), 'texstar:comcast');
+
+        $r = PackageReader::open($path);
+        $r->verify($this->ring());
+        $this->assertContains('receipt.json', $r->checkHashes());
+        $read = $r->receipts();
+        $this->assertCount(2, $read);
+        $zip = new \ZipArchive;
+        $zip->open($path);
+        $this->assertLessThanOrEqual(Contract::MAX_MANIFEST_BYTES, strlen((string) $zip->getFromName('receipt.json')));
+        $zip->close();
+        foreach ($read as $receipt) {
+            $jobs = $receipt->streams['jobs'];
+            $this->assertSame([40010, 10, 40000], [$jobs->received, $jobs->accepted, $jobs->rejected], 'the counts never shrink');
+            $this->assertFalse($jobs->listComplete());
+            $this->assertSame(40000, count($jobs->rejectedRows) + $jobs->rejectedRowsOmitted);
+            $this->assertGreaterThan(0, count($jobs->rejectedRows));
+            $this->assertSame(['key' => 'JB0000000000', 'seq' => 0], array_slice($jobs->rejectedRows[0], 0, 2), 'the first rejects stay listed');
+            $this->assertSame(9000, count($receipt->streams['poles']->rejectedRows) + $receipt->streams['poles']->rejectedRowsOmitted);
+        }
+
+        // The builder's default cap alone keeps a single receipt small.
+        $capped = (new ReceiptBuilder('3f3a1b2c-4d5e-4f60-8a71-8293a4b5c6d7', new Producer('pmo'), Scope::unscoped()))->received('jobs', 40000);
+        for ($i = 0; $i < 40000; $i++) {
+            $capped->reject('jobs', 'JB'.$i, $i, 'schema_invalid', 'drift');
+        }
+        $this->assertCount(ReceiptBuilder::MAX_LISTED_REJECTS, $capped->build()->streams['jobs']->rejectedRows);
+    }
+
+    public function test_add_receipts_refuses_a_document_that_cannot_fit_even_unlisted(): void
+    {
+        $rb = (new ReceiptBuilder('1f3a1b2c-4d5e-4f60-8a71-8293a4b5c6d7', new Producer('pmo'), Scope::unscoped()))->received('jobs', 1)
+            ->status('partial', str_repeat('m', Contract::MAX_MANIFEST_BYTES + 1));
+        $b = PackageBuilder::open($this->tempPath(), $this->draft());
+        try {
+            $b->addReceipts([$rb->build()]);
+            $this->fail('expected receipt_too_large');
+        } catch (PackageException $e) {
+            $this->assertSame('receipt_too_large', $e->wireCode());
+        }
+    }
+
     public function test_assert_scope_binds_the_key_to_the_scope_and_the_scope_to_the_instance(): void
     {
         $ring = KeyRing::fromEnvString('texstar:comcast=golden-fixture-key,other:pair=other-secret');

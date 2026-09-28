@@ -54,6 +54,25 @@ final readonly class Receipt
         );
     }
 
+    /** This receipt with at most `$maxPerStream` rejected rows listed per stream ({@see StreamReceipt::withListedRejects()}). */
+    public function withListedRejects(int $maxPerStream): self
+    {
+        $streams = array_map(fn (StreamReceipt $s) => $s->withListedRejects($maxPerStream), $this->streams);
+
+        return new self($this->packageId, $this->receiptId, $this->producedAt, $this->producer, $this->scope, $streams, $this->status, $this->message, $this->format, $this->version, $this->extra);
+    }
+
+    /** The longest rejected_rows list of any stream. */
+    public function longestRejectList(): int
+    {
+        $max = 0;
+        foreach ($this->streams as $s) {
+            $max = max($max, count($s->rejectedRows));
+        }
+
+        return $max;
+    }
+
     /** @return array<string, mixed> */
     public function toArray(): array
     {
