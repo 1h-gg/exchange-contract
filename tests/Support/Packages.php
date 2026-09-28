@@ -7,6 +7,7 @@ namespace Texstar\Exchange\Tests\Support;
 use Texstar\Exchange\Dto\Manifest;
 use Texstar\Exchange\Dto\Producer;
 use Texstar\Exchange\Dto\Scope;
+use Texstar\Exchange\Signing\KeyRing;
 
 /** Shared builders for the package tests: a temp path per test, a draft manifest, a test key ring. */
 trait Packages
@@ -43,6 +44,11 @@ trait Packages
             kind: $kind,
             cursors: ['readiness' => ['from' => null, 'to' => '0f3a1b2c-4d5e-4f60-8a71-8293a4b5c6d7']],
         );
+    }
+
+    protected function ring(): KeyRing
+    {
+        return KeyRing::fromEnvString('texstar:comcast=golden-fixture-key');
     }
 
     /** A minimal valid readiness row (every PAYLOAD_KEY + backlog). @return array<string, mixed> */

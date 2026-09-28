@@ -1,0 +1,93 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Reference CLI of texstar/exchange-contract (plain argv, no framework).
+ *
+ * This slice ships the contract-level commands; the runner commands (sync, push-updates) arrive
+ * with Cli/App once the /api/v1/exchange surface exists:
+ *
+ *   exchange schemas:audit                     keyword audit of schemas/v1 (exit 1 on problems)
+ *   exchange package:inspect <zip> [--keys=k=v,...] [--max-unpacked-mb=N]
+ *                                              manifest summary, negotiation, path discipline, hashes; verifies when keys are given
+ */
+foreach ([__DIR__.'/../vendor/autoload.php', __DIR__.'/../../../autoload.php'] as $autoload) {
+    if (is_file($autoload)) {
+        require $autoload;
+        break;
+    }
+}
+
+use Texstar\Exchange\Package\PackageReader;
+use Texstar\Exchange\Schema\KeywordAudit;
+use Texstar\Exchange\Schema\SchemaRegistry;
+use Texstar\Exchange\Signing\KeyRing;
+
+$args = array_slice($argv, 1);
+$command = array_shift($args) ?? 'help';
+$options = [];
+$positional = [];
+foreach ($args as $arg) {
+    if (str_starts_with($arg, '--') && str_contains($arg, '=')) {
+        [$k, $v] = explode('=', substr($arg, 2), 2);
+        $options[$k] = $v;
+    } else {
+        $positional[] = $arg;
+    }
+}
+
+$out = static fn (string $line) => fwrite(STDOUT, $line."\n");
+$err = static fn (string $line) => fwrite(STDERR, $line."\n");
+
+try {
+    switch ($command) {
+        case 'schemas:audit':
+            $problems = (new KeywordAudit(new SchemaRegistry))->run();
+            foreach ($problems as $p) {
+                $err($p);
+            }
+            $out($problems === [] ? 'schemas/v1: clean' : count($problems).' problem(s)');
+            exit($problems === [] ? 0 : 1);
+
+        case 'package:inspect':
+            $path = $positional[0] ?? throw new InvalidArgumentException('usage: exchange package:inspect <zip> [--keys=id=secret,...] [--max-unpacked-mb=N]');
+            $cap = isset($options['max-unpacked-mb']) ? (int) $options['max-unpacked-mb'] * 1024 * 1024 : PHP_INT_MAX;
+            $reader = PackageReader::open($path, $cap);
+            $m = $reader->manifestDto();
+            $out(sprintf('package %s  kind=%s  direction=%s  producer=%s  created=%s', $m->packageId, $m->kind, $m->direction, $m->producer->app, $m->createdAt));
+            $out('scope     '.json_encode($m->resolvedScope()->toArray()));
+            $out('declared  '.$reader->declaredSize().' bytes uncompressed');
+            $violations = $reader->validateManifest();
+            foreach ($violations as $v) {
+                $err('manifest: '.$v);
+            }
+            foreach ($reader->negotiation()->warnings() as $w) {
+                $err('warning: '.$w);
+            }
+            foreach ($m->files as $f) {
+                $out(sprintf('  stream %-24s %-6s rows=%-7d sha256=%s', $f->stream, $f->mode, $f->rows, substr($f->sha256, 0, 12).'…'));
+            }
+            foreach ($m->blobs as $b) {
+                $out(sprintf('  blob   %s %d bytes %s', substr($b->sha256, 0, 12).'…', $b->bytes, $b->mime));
+            }
+            if (isset($options['keys'])) {
+                $reader->verify(KeyRing::fromEnvString($options['keys']));
+                $out('signature verified ('.$m->signature['key_id'].')');
+            } else {
+                $out($m->isSigned() ? 'signature present, not verified (pass --keys)' : 'signature: none (kind=rows only)');
+            }
+            $reader->checkHashes();
+            $out('hashes ok ('.$reader->inflatedBytes().' bytes inflated)');
+            exit($violations === [] ? 0 : 1);
+
+        case 'help':
+        default:
+            $out('usage: exchange schemas:audit | package:inspect <zip> [--keys=id=secret,...] [--max-unpacked-mb=N]');
+            exit($command === 'help' ? 0 : 2);
+    }
+} catch (Throwable $e) {
+    $err(get_debug_type($e).': '.$e->getMessage());
+    exit(1);
+}
