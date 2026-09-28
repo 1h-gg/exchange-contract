@@ -42,7 +42,7 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 255,
-            "description": "job: JB; task: TSK or synthetic key; pole: candidate_key or \"JB|pole_identifier\"; violation: \"candidate_key|code\"; hold: JB."
+            "description": "job: JB; task: external_task_id (TSK), synthetic key, or \"<system>|<external_task_id>\"; pole: candidate_key or \"JB|pole_identifier\"; violation: \"<pole key>|<code>\"; hold: JB."
         },
         "field": {
             "type": "string",
@@ -50,7 +50,7 @@
             "maxLength": 80
         },
         "value": {
-            "description": "Ignored for clear; blank never means \"no change\" here (that is the workbook rule)."
+            "description": "Ignored for clear. On update a blank value (null or whitespace) is answered unchanged and the literal string CLEAR is a clear (the workbook rule, applied to JSON too); a non-scalar value is answered rejected."
         },
         "reason": {
             "type": [
