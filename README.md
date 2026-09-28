@@ -32,7 +32,7 @@ are in the NESC repo: `docs/HANDOVER-INVENTORY.md` §8c and `docs/04-integration
 | `src/Cli/*` | `App`, `SyncCommand`, `PushUpdatesCommand` — what `bin/exchange` runs |
 | `src/Testing/ContractSuite.php` | the golden fixtures as a suite either app's test runner invokes |
 | `src/Testing/FixtureSigner.php`, `ZipTamper.php` | fixture maintenance and test-only zip surgery |
-| `fixtures/v1/` | `keys.json` (test-only key) and the twelve fixture trees, each with `expectations.json` |
+| `fixtures/v1/` | `keys.json` (test-only keys) and the sixteen fixture trees, each with `expectations.json` |
 | `bin/exchange` | the reference CLI |
 
 Every schema declares `$schema` 2020-12 and uses only the keywords `SchemaValidator` implements
@@ -59,7 +59,7 @@ scope: {tenant, contract, program, instance|null}   OPTIONAL — absent => Scope
 cursors: {<stream>: {from, to}}     opaque
 files:  [{path, stream, schema: "<stream>@1", rows, sha256, bytes, mode: delta|full, set_checksum?, set_total?}]
 blobs:  [{sha256, bytes, mime, path: "files/<sha256>"}]
-receipts: [{package_id, path: "receipt.json"}]
+receipts: [{package_id, path: "receipt.json", sha256, bytes}]   every entry: the same hash + length of receipt.json
 extras: {readiness_feed?, p2_runner_summary?, worker_activity_summary?, gis_icons?, external_refs_skipped?}
 signature: {alg: "HMAC-SHA256", key_id: "<tenant>:<contract>", value: hex} | null   (null only when kind = rows)
 ```
@@ -97,12 +97,13 @@ that lack it). `origin` / `origin_ref` are optional on every row (Phase 1e sheet
 | pge_violations | — | pmo→nesc | full | ticket | `{ticket, payload}`; `payload` = `NescPgeController::violation()`; store only on NESC | **yes — no full-set producer exists** |
 | updates | — | API only | — | id | `UpdateOp` (`POST /updates`); never a package stream | — |
 
-`external_refs.entity_key`: `App\Models\Job` → `job_number` (covers p2 / jobmaster / p2_runner / pmo /
-sphere refs, worker_activity presence and the `assignment:<id>` booking refs, which
-`MirrorProjector::waBooking` writes on the Job); `App\Models\JobTask` → `external_task_id`, else
-`synthetic_key`, else the row is omitted; `Pole` (`candidate_key`) and `Inspection`
-(`nesc:inspection:<id>:r<rev>`) are **reserved** — no projector writes them in 1b and PMO must not
-expect them. `entity_id` is informational. The JSON column is `properties` (not `attributes`).
+`external_refs.entity_type` is neutral — `job | job_task | pole | inspection`, never an app class
+name. `entity_key`: `job` → `job_number` (covers p2 / jobmaster / p2_runner / pmo / sphere refs,
+worker_activity presence and the `assignment:<id>` booking refs, which `MirrorProjector::waBooking`
+writes on the Job); `job_task` → `external_task_id`, else `synthetic_key`, else the row is omitted;
+`pole` (`candidate_key`) and `inspection` (`nesc:inspection:<id>:r<rev>`) are **reserved** — no
+projector writes them in 1b and PMO must not expect them. `entity_id` is informational. The JSON
+column is `properties` (not `attributes`).
 
 `RowKey::for(stream, row)` joins composite keys with `|` and prefixes kind-discriminated streams
 (`job|JB000001`); receipts and verdicts address rows by `(key, seq)`, never by batch index.
@@ -122,8 +123,15 @@ consumer's own refusals. For `poles`, a whole-set refusal (checksum, out of orde
 Outbound bookkeeping, which PMO mirrors for its own outbox:
 - A row's identity is `(stream, sha256(RowKey))` and its content is
   `sha256(CanonicalJson(row minus scope))`. A changed row stages a new generation, and an unchanged
-  re-send stages nothing.
-- A download holds every row no receipt has accepted yet, plus the rows of failed builds.
+  re-send stages nothing — unless the latest generation was **rejected** by a receipt: then the
+  producer's next attempt stages it again (the HTTP bridge re-sends rejected rows the same way; the
+  pusher's own attempt limits decide when it stops).
+- A download holds every row no receipt has settled (`receipted_at` null), whichever earlier package
+  carried it — never packaged, in a package whose download may never have reached the other side,
+  in a failed build, or in a stream the receipt left out — except rows whose key has a newer
+  generation. A new build re-stamps those rows onto itself and marks every older unreceipted
+  `ready` package `superseded`; a late receipt for a superseded package settles only the rows it
+  still holds. Consumers therefore see repeated rows and MUST upsert by key.
 - `seq` is stamped at package time.
 - `cursors[stream]` for the producer's own streams is `{from: last receipted package_id, to: this
   package_id}`. Cursors of the other side's feeds travel verbatim.
@@ -131,9 +139,35 @@ Outbound bookkeeping, which PMO mirrors for its own outbox:
   a receipt is a no-op.
 
 A receipt exists **only** for a package whose manifest verified: `applied`, or `rejected` after verify
-(`unsupported_version`, `unexpected_entry`, `hash_mismatch`, `unpacked_too_large`). Packages rejected
-before verify (`signature_invalid`, `signature_missing`, `unknown_key_id`, `unknown_producer`,
-`direction_mismatch`) get none — their `rejected_code` is visible only on `GET /inbound/{uuid}`.
+(`out_of_order`, `unsupported_version`, `unexpected_entry`, `hash_mismatch`, `unpacked_too_large`).
+Packages rejected before verify (`signature_invalid`, `signature_missing`, `unknown_key_id`,
+`unknown_producer`, `direction_mismatch`, `scope_mismatch`) get none — their `rejected_code` is
+visible only on `GET /inbound/{uuid}`, and they never claim their manifest's `package_id`.
+
+### Consumer rules (both importers)
+
+1. **Gates, in order:** signature (fail closed) → direction → producer → **scope binding**
+   (`PackageReader::assertScope($local)`: `signature.key_id` must be the `"<tenant>:<contract>"` of the
+   manifest's resolved scope — an unscoped manifest resolves to `texstar/comcast/comcast-nesc` — and
+   that scope's tenant, contract and program must be the importer's own; else `scope_mismatch`) →
+   record the `package_id` (only now) → **ordering** (a `package` whose `created_at` is older than
+   one already applied is `out_of_order`: rejected with a receipt, so the producer re-sends its rows)
+   → manifest schema / version / path discipline → declared size → `checkHashes()` (streams, blobs
+   **and receipt.json**) → rows.
+2. **Rows:** each line is `row_too_large`, `invalid_json`, `schema_invalid`, `row_key` (cannot be keyed)
+   or `scope_mismatch` (its own `scope` names another tenant, contract or program), or accepted.
+   Every reject is a `(key, seq)` entry of the receipt. The `malformed-rows` fixture pins the codes.
+3. **Receipts carried in a package** are trusted only as far as the signed manifest: receipt.json must
+   hash to `receipts[].sha256` / `bytes` (`hash_mismatch` rejects the whole package), and a receipt
+   for a package id no `receipts[]` entry declares is ignored (`PackageReader::receipts()` does both).
+4. **Every stream of a verified package appears in the receipt** — accepted, rejected per row, or the
+   whole stream refused — with `received` equal to the rows the package carried in it and
+   `accepted + rejected = received`. A producer settles NOTHING in a stream whose counts do not add
+   up (it keeps those rows pending), and a stream the receipt omits stays pending: omitting one means
+   it is sent again. Streams with no ingest on the receiving side (`external_refs`, `readiness_feed`
+   on PMO today) are still receipted: store them or accept-and-drop them, but answer for them.
+5. **Delta ordering:** apply delta streams in package order; never store a cursor older than the one
+   already stored (see rule 1's `out_of_order`).
 Receipts travel inside the next package in the opposite direction AND are fetchable from
 `GET /inbound/{uuid}/receipt`.
 
@@ -151,11 +185,20 @@ or secret throws, so an unset environment yields an **empty** ring: `Signer` thr
 (`unknown_key_id`), `Verifier` always fails. `Verifier` requires `alg`, a known non-empty `key_id`
 and a hex value, compares with `hash_equals`, and throws `SignatureException` with
 `signature_missing` (absent, `null` or incomplete), `unknown_key_id` or `signature_invalid`.
+A valid signature is not enough on its own: `PackageReader::assertScope()` binds the key id to the
+manifest's scope and the scope to the reader's instance (`scope_mismatch`), so with several pairs in
+one ring a key can only sign its own (tenant, contract).
+
+**Secrets:** at least 32 bytes — generate one with `openssl rand -hex 32` and agree it out of band. NESC
+ignores (and logs by key id) any shorter secret outside its test suite; PMO should do the same. The
+golden fixture keys in `fixtures/v1/keys.json` are short, public and test-only: never configure them.
 
 **Exemption — `kind = rows`.** `POST /rows/{stream}` builds an unsigned mini package server-side
 (`PackageBuilder::finalizeUnsigned()`, permitted only when the draft `kind === 'rows'`) and stages it
 with the signature, producer and direction gates skipped, because the Sanctum principal holding
-`exchange.apply` already authenticated the rows. The same zip pushed through `POST /inbound` is a
+`exchange.apply` already authenticated the rows. **Delta streams only:** a full-mode stream replaces
+the whole set, so `POST /rows` of `poles`, `packets_wanted`, `gis_sources`, `gis_features` or
+`pge_violations` is 422 `full_stream_requires_package` — full sets travel only signed. The same zip pushed through `POST /inbound` is a
 `kind = package` upload and is rejected `signature_invalid` (`signature_missing` on the wire): the
 inbound upload crosses company lines and nothing unsigned crosses it. Fixture: `rows-kind`.
 
@@ -164,7 +207,7 @@ inbound upload crosses company lines and nothing unsigned crosses it. Fixture: `
 Bearer token only (a field login / pairing token or an API-client token). Every POST/PUT carries an
 `Idempotency-Key` (1–128 chars); `429` answers carry `Retry-After`; every non-2xx body is the one
 envelope `{"error": {"code", "message", "row"?: {stream, seq, key}, "correlation_id"?}}`; long
-operations are async with a pollable status (`outbound: queued → building → ready → receipted | failed`;
+operations are async with a pollable status (`outbound: queued → building → ready → receipted | failed | superseded`;
 `inbound: uploading → staging → previewed → applying → applied | failed | rejected`).
 
 The reference document is `openapi/nesc-exchange.openapi.json` (OpenAPI 3.1, exported from NESC by
@@ -200,20 +243,28 @@ POST /rows/{stream} (≤ 500 rows, ?dry_run=)        POST /updates (ops ≤ 2000
   `PUT /files`, rows), `updates.bulk` (updates, workbook). Every mutating call is audited with `via`
   and `token_name`.
 - **Order** (as physical nested groups, since the framework only sorts priority-listed middleware):
-  1. a pre-auth per-IP limiter (60/min, counted on 401s)
+  1. a pre-auth limiter per (client address, presented token id) (60/min, counted on 401s) — the
+     token id is in the key so a flood of bad tokens from a (possibly spoofed) address cannot lock
+     out a different, valid token
   2. `auth:sanctum`
-  3. the access rules
+  3. the access rules — including: the principal holds at least one of `exchange.view`,
+     `exchange.apply`, `updates.bulk` (a field token without any is 403 `forbidden` here)
   4. `throttle:exchange` (120/min)
-  5. per group `exchange-heavy` 10/min (build, single-shot upload, finalize, apply, rows, updates),
-     `exchange-upload` 120/min (chunks) or `exchange-files` 240/min (download, workbook, files),
-     always **before** Idempotency-Key, so a throttled request never creates an idempotency row.
+  5. per group `exchange-heavy` 10/min (build, single-shot upload, finalize, apply, rows, updates,
+     the workbook export), `exchange-upload` 120/min (chunks) or `exchange-files` 240/min
+     (download, files)
+  6. the route's permission check
+  7. Idempotency-Key — last, so a throttled or unauthorized request never streams a body, hashes an
+     upload or creates an idempotency row.
 - **Idempotency-Key** (1–128 chars) is required on every POST/PUT. Scope: (principal user, key).
   - Fingerprint: sha256 of method + path + canonical JSON of the non-file inputs + the sha256 of each
     uploaded file (in field order) + the raw-body sha256.
   - Same fingerprint → the stored answer with `Idempotency-Replayed: true`. A different fingerprint →
     409 `idempotency_conflict`. An attempt still inside its 15-minute lease → 409
     `idempotency_in_progress`.
-  - Only 2xx and non-429 4xx answers are stored, for 24 h. A retry after a 429 or 5xx runs for real.
+  - Only 2xx and 4xx answers other than 401 / 403 / 429 are stored, for 24 h, under their original
+    status (a stored 202 replays as 202, also when the body is replaced by the `{id, status,
+    status_url}` summary). A retry after a 401, 403, 429 or 5xx runs for real.
     `RunnerClient` reuses one v4 key for retries of the same request (same method, path, inputs and file hash) and mints a fresh one when anything changes.
 
 ### Errors
@@ -225,19 +276,22 @@ NESC answers:
 |---|---|
 | 400 | `idempotency_key_required`, `hash_mismatch` |
 | 401 | `unauthenticated` (a missing, expired or revoked token; there is no `token_expired`); `client_expired`, `client_disabled` (API clients, NESC slice 1b-10) |
-| 403 | `forbidden`, `impersonation_token`, `account_disabled`, `demo_mode`, `not_owner`, `ip_not_allowed` (API clients) |
+| 403 | `forbidden` (also: no exchange permission at all), `impersonation_token`, `account_disabled`, `demo_mode`, `not_owner`, `ip_not_allowed` (API clients) |
 | 404 | `not_found` |
 | 405 | `method_not_allowed` |
-| 409 | `conflict`, `idempotency_conflict`, `idempotency_in_progress` |
+| 409 | `conflict` (also: an apply already claimed), `idempotency_conflict`, `idempotency_in_progress`, `too_many_uploads` (more than three unfinished chunked uploads per principal) |
 | 413 | `package_too_large`, `unpacked_too_large`, `file_too_large` |
-| 422 | `validation_failed` (with `row` for `rows.N.*` / `ops.N.*`), `signature_invalid`, `unknown_producer`, `unsupported_version`, `direction_mismatch`, `unexpected_entry`, `unsupported_media` |
+| 422 | `validation_failed` (with `row` for `rows.N.*` / `ops.N.*`), `full_stream_requires_package` (`POST /rows` of a full-mode stream), `signature_invalid`, `unknown_producer`, `unsupported_version`, `direction_mismatch`, `unexpected_entry`, `unsupported_media` |
 | 429 | `rate_limited` + `Retry-After` |
 | 503 | `signing_not_configured` |
 | any | `http_<status>` for any other HTTP exception |
 | 500 | `server_error` with a fixed message and a `correlation_id`; the exception text never reaches the body |
 
-The PMO-side draft also answers `token_invalid` 401, `token_rotated` 401 and `too_many_uploads` 409.
-Adding them to NESC or dropping them from PMO is an [open item](#open-contract-items).
+An import's `rejected_code` (not an HTTP status) is one of `signature_invalid`, `direction_mismatch`,
+`unknown_producer`, `scope_mismatch`, `out_of_order`, `unsupported_version`, `unexpected_entry`,
+`unpacked_too_large`, `hash_mismatch`. The PMO-side draft also answers `token_invalid` 401 and
+`token_rotated` 401; adding them to NESC or dropping them from PMO is an
+[open item](#open-contract-items).
 
 ### Inbound: 200 vs 202
 
@@ -252,7 +306,9 @@ Adding them to NESC or dropping them from PMO is an [open item](#open-contract-i
 
 ### Chunk lifecycle (client uuid)
 
-The **client** generates a v4 uuid. The first `POST /inbound/{uuid}/chunks` creates the `uploading`
+The **client** generates a v4 uuid (a principal may hold at most three unfinished uploads: 409
+`too_many_uploads`; an upload idle for 24 h is removed by `exchange:prune`). The first
+`POST /inbound/{uuid}/chunks` creates the `uploading`
 import owned by the caller (`409 conflict` when the uuid exists under another owner); later chunks,
 `finalize` and `apply` require the same owner; `finalize`/`apply` on an unknown uuid → `404`. Each
 chunk carries `chunk_index`, `total_chunks` (≤ `max_chunks`) and `checksum` (sha256 of the chunk);
@@ -318,10 +374,11 @@ name, is `HashMismatchException`. Wire codes: `unpacked_too_large` / `hash_misma
 
 `fixtures/v1/<name>/` is a committed package tree (`manifest.json`, `streams/*.ndjson`, `files/*`,
 `receipt.json`, optional `entries.json` for exotic zip entry names) plus `expectations.json`
-(`kind`, `direction`, `key_id`, `scope`, `verify`, `validate`/`violations`, `hashes`, per-stream
-`rows`/`rejects`, `skipped`, `receipts`, `source` = the producer file:line each stream was derived
-from, `pins`, and the `build` block `fixtures:sign` uses). Every manifest is signed with
-`fixtures/v1/keys.json` (`texstar:comcast` = `golden-fixture-key`, test-only).
+(`kind`, `direction`, `key_id`, `scope`, `verify`, `scope_binding`, `validate`/`violations`, `hashes`,
+per-stream `rows`/`rejects`/`rejected_rows`, `skipped`, `receipts`, `source` = the producer file:line
+each stream was derived from, `pins`, and the `build` block `fixtures:sign` uses). Every manifest is
+signed with `fixtures/v1/keys.json` (`texstar:comcast` = `golden-fixture-key`, plus `other:pair` for
+the key-binding negative; test-only, short on purpose — never configure them).
 
 | fixture | what it proves |
 |---|---|
@@ -337,6 +394,10 @@ from, `pins`, and the `build` block `fixtures:sign` uses). Every manifest is sig
 | `unscoped` | no scope anywhere → `Scope::UNSCOPED`, applies to `comcast-nesc` |
 | `oversize-row` | one 2 MB line → `row_too_large` for that seq, the package stays valid |
 | `unsigned-package` | `kind = package` with `signature: null` → `signature_missing` |
+| `tampered-receipt` | signed; receipt.json edited afterwards (a rejected row turned accepted) → `hash_mismatch`, `receipts()` refuses it |
+| `malformed-rows` | one `dailies` stream: a valid row, then `schema_invalid`, `invalid_json`, `row_key` at seq 1-3 (`rejected_rows`) |
+| `foreign-program` | correctly signed for texstar/comcast but program `comcast-other` → `scope_mismatch` |
+| `key-scope-mismatch` | declares texstar/comcast, signed with the ring's `other:pair` key → verifies, then `scope_mismatch` |
 
 Run them from any test runner:
 
@@ -366,8 +427,11 @@ bin/exchange fixtures:sign [--fixture=NAME]   bin/exchange fixtures:build NAME [
 bin/exchange schemas:audit                    bin/exchange package:inspect some.txx.zip --keys=texstar:comcast=<secret> --max-unpacked-mb=2048
 ```
 
-Tokens come from `--from-token` / `--to-token` / `--token` or, better, the environment
-(`EXCHANGE_FROM_TOKEN`, `EXCHANGE_TO_TOKEN`, `EXCHANGE_TOKEN`), so they never show in `ps`. `sync`
+Tokens come, best first, from `--from-token-file` / `--to-token-file` / `--token-file`, the
+environment (`EXCHANGE_FROM_TOKEN`, `EXCHANGE_TO_TOKEN`, `EXCHANGE_TOKEN`), or the flags
+`--from-token` / `--to-token` / `--token` — accepted with a warning, since a flag shows in `ps` and
+shell history. `RunnerClient` refuses a non-https base URL unless the host is localhost / 127.0.0.1 /
+::1 or `--insecure` (`allowInsecure: true`) is given. `sync`
 builds "everything not yet receipted" on the FROM app, waits, downloads the signed zip (checked
 against `X-Package-Sha256`), uploads it to the TO app with `auto_apply`, waits, prints the receipt;
 `--both` runs the opposite direction next, which carries the receipt back. The runner talks to both
@@ -411,16 +475,19 @@ in 1.0.0:
 | `inspection_packets.photos[].file_url` | require `https://`; consumers keep only the producer's host(s), otherwise fall back to `/files/<sha256>` | schema, contract 1.1.0 |
 | `review_decisions` `merged` | NESC's HTTP `pushMergeDecision` sends `merged`, which PMO's frozen HTTP ingest rejects; the package path aliases it. Is an unknown `candidate_key` `unknown_candidate` in the package path? | owner decision |
 | `readiness_feed` in PMO's receipt | add the block to `pmo-to-nesc-basic/receipt.json` + `fixtures:sign` | fixture |
-| extra error codes | `token_invalid`, `token_rotated`, `too_many_uploads` on both sides, or on neither | both apps |
+| extra error codes | `token_invalid`, `token_rotated` on both sides, or on neither (`too_many_uploads` 409 now ships on NESC) | both apps |
 | same `package_id`, different bytes | NESC answers 200 with the settled import; the PMO draft answers 409 `conflict`. Pick one | both apps |
 
 ## PMO implementation checklist
 
 What the PMO side must do to pass `ContractSuite` and interoperate with the NESC side:
 
-1. **Reader/importer:** `verify` → `validateManifest` → `declaredSize` → `checkHashes` → rows, under the
-   inflate cap; refuse producers other than `nesc`, directions other than `nesc_to_pmo`, unsigned or
-   unknown-key manifests; skip unknown streams and higher stream majors with a warning.
+1. **Reader/importer:** the [Consumer rules](#consumer-rules-both-importers): `verify` → direction →
+   producer → `assertScope` → package_id → ordering → `validateManifest` → `declaredSize` →
+   `checkHashes` (receipt.json included) → rows, under the inflate cap; refuse producers other than
+   `nesc`, directions other than `nesc_to_pmo`, unsigned or unknown-key manifests, a key that is not
+   the scope's own and a foreign program; skip unknown streams and higher stream majors with a
+   warning; answer for every stream in the receipt.
 2. **Receipts only after verify**, keyed by `RowKey` + `seq` (0-based line in the stream file) — never
    by batch index: translate `P2RunnerNescIngest` `errors[].index` and `WaRunnerNescIngest`'s silent
    skips into `(key, seq)` rows. Ship them in the next `pmo_to_nesc` package AND on `GET /inbound/{uuid}/receipt`.
@@ -453,7 +520,7 @@ What the PMO side must do to pass `ContractSuite` and interoperate with the NESC
       Idempotency-Key)
     - the same Idempotency-Key fingerprint and lease
     - the envelope and its codes
-    - the async status models (`outbound: queued → building → ready → receipted | failed`;
+    - the async status models (`outbound: queued → building → ready → receipted | failed | superseded`;
       `inbound: uploading → staging → previewed → applying → applied | failed | rejected`), 202
       `{id, status, status_url}`
     - the client-uuid chunk lifecycle with owner checks
@@ -465,9 +532,11 @@ What the PMO side must do to pass `ContractSuite` and interoperate with the NESC
 13. **Keys:** the same secret under the same key id (`texstar:comcast`), parsed the same way (split on
     `,`, then the first `=`). A blank or malformed ring fails closed (no build, and every package is
     `signature_invalid`). Never log the secret.
-14. **Outbox semantics** as in [Receipt](#receipt): identity + fingerprint + generation, `seq` stamped at
-    package time, and "everything not yet receipted" per download. PMO's receipt for a NESC package
-    rides in PMO's next package AND is served on `GET /inbound/{uuid}/receipt`.
+14. **Outbox semantics** as in [Receipt](#receipt): identity + fingerprint + generation (a rejected
+    latest generation is re-staged on the next attempt), `seq` stamped at package time, and every
+    unsettled row per download with older unreceipted packages superseded. PMO's receipt for a NESC
+    package rides in PMO's next package (receipt.json bound by `receipts[].sha256` / `bytes`) AND is
+    served on `GET /inbound/{uuid}/receipt`.
 15. **Bulk updates** (`POST /updates`, `GET /updates/workbook`):
     - the same verdict vocabulary (`applied | unchanged | rejected | forbidden | unknown_key |
       unsupported_until_1d`), ≤ 500 ops synchronous and more queued (202), ≤ 2000 ops per request

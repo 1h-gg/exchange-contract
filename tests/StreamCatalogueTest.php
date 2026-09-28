@@ -51,6 +51,29 @@ final class StreamCatalogueTest extends TestCase
         }
     }
 
+    /**
+     * Every bridge action the catalogue names must exist: the live bridge actions (PMO
+     * NescBridgeApiController / NESC HttpTransport::BRIDGE_ACTIONS), NESC's legacy dailies_since and
+     * the PMO GIS / PG&E endpoints the full-set streams replace.
+     */
+    public function test_every_action_is_a_real_bridge_action(): void
+    {
+        $known = [
+            'pull_jobs', 'poles_snapshot', 'push_observations', 'push_review_decisions', 'push_inspection_reports',
+            'push_p2_job_states', 'pull_p2_runner_status', 'pull_jobmaster_status', 'push_inspection_packets',
+            'inspection_packets_wanted', 'push_worker_activity', 'pull_worker_activity',
+            'dailies_since', 'gis_sources', 'gis_lookup', 'pge_lookup',
+        ];
+        foreach (StreamCatalogue::allNames() as $name) {
+            $action = StreamCatalogue::get($name)['action'] ?? null;
+            if ($action !== null) {
+                $this->assertContains($action, $known, $name.' names an action no bridge answers');
+            }
+        }
+        $this->assertSame('poles_snapshot', StreamCatalogue::get('poles')['action']);
+        $this->assertSame('pull_worker_activity', StreamCatalogue::get('worker_activity_status')['action']);
+    }
+
     public function test_unknown_stream_throws(): void
     {
         $this->expectException(ExchangeException::class);
@@ -69,7 +92,7 @@ final class StreamCatalogueTest extends TestCase
         $this->assertSame('rfa|9', RowKey::for('p2_runner_status', ['kind' => 'rfa', 'pmo_operation_id' => 9]));
         $this->assertSame('job|JB000001', RowKey::for('p2_runner_status', ['kind' => 'job', 'job_number' => 'JB000001']));
         $this->assertSame('assignment|3', RowKey::for('worker_activity_status', ['kind' => 'assignment', 'nesc_assignment_id' => 3]));
-        $this->assertSame('App\Models\Job|JB000001|p2|JB000001', RowKey::for('external_refs', ['entity_type' => 'App\Models\Job', 'entity_key' => 'JB000001', 'system' => 'p2', 'external_id' => 'JB000001', 'entity_id' => 4]));
+        $this->assertSame('job|JB000001|p2|JB000001', RowKey::for('external_refs', ['entity_type' => 'job', 'entity_key' => 'JB000001', 'system' => 'p2', 'external_id' => 'JB000001', 'entity_id' => 4]));
         $this->assertSame('poles|123', RowKey::for('gis_features', ['layer' => 'poles', 'feature_id' => '123']));
         $this->assertSame('T-1', RowKey::for('pge_violations', ['ticket' => 'T-1', 'payload' => []]));
         $this->assertSame('d1', RowKey::for('dailies', ['daily' => 'd1']));

@@ -2,7 +2,7 @@
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "https://texstar.app/exchange/v1/streams/external_refs.schema.json",
     "title": "external_refs",
-    "description": "A projection of NESC external_refs rows. entity_key derivation: App\\Models\\Job -> job_number (covers p2 / jobmaster / p2_runner / pmo / sphere refs, worker_activity presence AND the \"assignment:<id>\" booking refs, which MirrorProjector::waBooking writes on the Job); App\\Models\\JobTask -> external_task_id, else synthetic_key, else the row is omitted; Pole (candidate_key) and Inspection (nesc:inspection:<id>:r<rev>) are RESERVED — no projector writes them in 1b and the PMO side must not expect them. entity_id is informational (NESC primary key). Emitted only when the ExternalRefDriftCheck passes. Key: entity_type|entity_key|system|external_id. Delta.",
+    "description": "A projection of NESC external_refs rows. entity_key derivation: job -> job_number (covers p2 / jobmaster / p2_runner / pmo / sphere refs, worker_activity presence AND the \"assignment:<id>\" booking refs, which MirrorProjector::waBooking writes on the Job); job_task -> external_task_id, else synthetic_key, else the row is omitted; pole (candidate_key) and inspection (nesc:inspection:<id>:r<rev>) are RESERVED — no projector writes them in 1b and the PMO side must not expect them. entity_id is informational (NESC primary key). Emitted only when the ExternalRefDriftCheck passes. Key: entity_type|entity_key|system|external_id. Delta.",
     "type": "object",
     "required": [
         "entity_type",
@@ -14,11 +14,12 @@
         "entity_type": {
             "type": "string",
             "enum": [
-                "App\\Models\\Job",
-                "App\\Models\\JobTask",
-                "App\\Models\\Pole",
-                "App\\Models\\Inspection"
-            ]
+                "job",
+                "job_task",
+                "pole",
+                "inspection"
+            ],
+            "description": "Neutral entity type (never an app class name): job | job_task | pole | inspection."
         },
         "entity_key": {
             "$ref": "../common.schema.json#/$defs/entity_key"

@@ -151,7 +151,9 @@
     "receipts": [
         {
             "package_id": "4c5d6e7f-8a9b-4c0d-8e1f-2a3b4c5d6e7f",
-            "path": "receipt.json"
+            "path": "receipt.json",
+            "sha256": "8ad52a2e9f57782c5b8ba305a7a7560906d80f847953f0f76324d5cc545bb3c4",
+            "bytes": 3833
         }
     ],
     "extras": {
@@ -255,6 +257,6 @@
     "signature": {
         "alg": "HMAC-SHA256",
         "key_id": "texstar:comcast",
-        "value": "786f5d505db3b32f8340d075236a48c44d108eff3335899f6212247a68c9b4a6"
+        "value": "dfbb27ccb8063e05e94390694f4d63451eaea03b35c5a57cc684fe2a7e5f0a5b"
     }
 }

@@ -1,0 +1,91 @@
+{
+    "format": "texstar-exchange-receipt",
+    "version": 1,
+    "receipts": [
+        {
+            "format": "texstar-exchange-receipt",
+            "version": 1,
+            "package_id": "4c5d6e7f-8a9b-4c0d-8e1f-2a3b4c5d6e7f",
+            "receipt_id": "9e0f1a2b-3c4d-4e5f-8a6b-7c8d9e0f1a2b",
+            "produced_at": "2026-09-01T12:00:00+00:00",
+            "producer": {
+                "app": "pmo",
+                "version": "2026.09.27",
+                "instance": "pmo",
+                "contract": "1.0.0"
+            },
+            "scope": {
+                "tenant": "texstar",
+                "contract": "comcast",
+                "program": "comcast-nesc",
+                "instance": null
+            },
+            "streams": {
+                "readiness": {
+                    "received": 1,
+                    "accepted": 1,
+                    "rejected": 0,
+                    "accepted_all": true,
+                    "rejected_rows": [],
+                    "cursor_to": "4c5d6e7f-8a9b-4c0d-8e1f-2a3b4c5d6e7f",
+                    "applied_at": "2026-09-01T12:00:00+00:00"
+                },
+                "inspection_reports": {
+                    "received": 2,
+                    "accepted": 2,
+                    "rejected": 0,
+                    "accepted_all": true,
+                    "rejected_rows": [],
+                    "cursor_to": "4c5d6e7f-8a9b-4c0d-8e1f-2a3b4c5d6e7f",
+                    "applied_at": "2026-09-01T12:00:00+00:00"
+                },
+                "inspection_packets": {
+                    "received": 1,
+                    "accepted": 1,
+                    "rejected": 0,
+                    "accepted_all": true,
+                    "rejected_rows": [],
+                    "cursor_to": "4c5d6e7f-8a9b-4c0d-8e1f-2a3b4c5d6e7f",
+                    "applied_at": "2026-09-01T12:00:00+00:00"
+                },
+                "review_decisions": {
+                    "received": 2,
+                    "accepted": 2,
+                    "rejected": 0,
+                    "accepted_all": true,
+                    "rejected_rows": [],
+                    "cursor_to": "4c5d6e7f-8a9b-4c0d-8e1f-2a3b4c5d6e7f",
+                    "applied_at": "2026-09-01T12:00:00+00:00"
+                },
+                "observations": {
+                    "received": 2,
+                    "accepted": 2,
+                    "rejected": 0,
+                    "accepted_all": true,
+                    "rejected_rows": [],
+                    "cursor_to": "4c5d6e7f-8a9b-4c0d-8e1f-2a3b4c5d6e7f",
+                    "applied_at": "2026-09-01T12:00:00+00:00"
+                },
+                "worker_activity": {
+                    "received": 4,
+                    "accepted": 4,
+                    "rejected": 0,
+                    "accepted_all": true,
+                    "rejected_rows": [],
+                    "cursor_to": "4c5d6e7f-8a9b-4c0d-8e1f-2a3b4c5d6e7f",
+                    "applied_at": "2026-09-01T12:00:00+00:00"
+                },
+                "external_refs": {
+                    "received": 7,
+                    "accepted": 7,
+                    "rejected": 0,
+                    "accepted_all": true,
+                    "rejected_rows": [],
+                    "cursor_to": "4c5d6e7f-8a9b-4c0d-8e1f-2a3b4c5d6e7f",
+                    "applied_at": "2026-09-01T12:00:00+00:00"
+                }
+            },
+            "status": "applied"
+        }
+    ]
+}

@@ -22,17 +22,17 @@ final class FixturesTest extends TestCase
 
     public const PACKET_FINGERPRINT = '0661230901bb5509b03b1af11edf14bd2160a9415a865223402c2b6af3a9a097';
 
-    public const FIXTURES = ['bad-blob', 'bad-path', 'bad-signature', 'nesc-to-pmo-basic', 'oversize-row', 'pmo-to-nesc-basic', 'rows-kind', 'tampered-stream', 'unknown-stream', 'unscoped', 'unsigned-package', 'v2-major'];
+    public const FIXTURES = ['bad-blob', 'bad-path', 'bad-signature', 'foreign-program', 'key-scope-mismatch', 'malformed-rows', 'nesc-to-pmo-basic', 'oversize-row', 'pmo-to-nesc-basic', 'rows-kind', 'tampered-receipt', 'tampered-stream', 'unknown-stream', 'unscoped', 'unsigned-package', 'v2-major'];
 
     public static function tearDownAfterClass(): void
     {
         ContractSuite::cleanup();
     }
 
-    public function test_the_twelve_fixtures_exist(): void
+    public function test_the_sixteen_fixtures_exist(): void
     {
         $this->assertSame(self::FIXTURES, ContractSuite::names());
-        $this->assertSame(['texstar:comcast'], ContractSuite::keyRing()->keyIds());
+        $this->assertSame(['texstar:comcast', 'other:pair'], ContractSuite::keyRing()->keyIds());
     }
 
     /** @return iterable<string, array{0: string}> */
@@ -80,6 +80,9 @@ final class FixturesTest extends TestCase
         foreach (self::FIXTURES as $name) {
             $m = PackageReader::open(ContractSuite::build($name))->manifestDto();
             $this->assertContains($m->direction, ['nesc_to_pmo', 'pmo_to_nesc'], $name);
+            if (in_array($name, ['foreign-program', 'key-scope-mismatch'], true)) {
+                continue; // the two scope-binding negatives, pinned by their own expectations
+            }
             $this->assertSame('comcast-nesc', $m->resolvedScope()->program, $name);
             if ($m->isSigned()) {
                 $this->assertSame('texstar:comcast', $m->signature['key_id'], $name);
@@ -191,12 +194,12 @@ final class FixturesTest extends TestCase
         $rows = iterator_to_array($reader->rows('external_refs'));
         $this->assertCount(7, $rows);
         $types = array_unique(array_column($rows, 'entity_type'));
-        $this->assertEqualsCanonicalizing(['App\Models\Job', 'App\Models\JobTask'], $types);
+        $this->assertEqualsCanonicalizing(['job', 'job_task'], $types);
         $keys = array_map(fn ($r) => RowKey::for('external_refs', $r), $rows);
-        $this->assertContains('App\Models\Job|JB0002685018|worker_activity|assignment:1', $keys);
-        $this->assertContains('App\Models\JobTask|TSK0034669922|p2|TSK0034669922', $keys);
+        $this->assertContains('job|JB0002685018|worker_activity|assignment:1', $keys);
+        $this->assertContains('job_task|TSK0034669922|p2|TSK0034669922', $keys);
         $this->assertSame(count($keys), count(array_unique($keys)));
-        $systems = array_column(array_filter($rows, fn ($r) => $r['entity_type'] === 'App\Models\Job'), 'system');
+        $systems = array_column(array_filter($rows, fn ($r) => $r['entity_type'] === 'job'), 'system');
         $this->assertEqualsCanonicalizing(['p2_runner', 'jobmaster', 'worker_activity', 'worker_activity', 'pmo', 'sphere'], $systems);
         foreach ($rows as $row) {
             $this->assertSame(['entity_type', 'entity_key', 'entity_id', 'system', 'external_id', 'url', 'status', 'status_raw', 'status_at', 'properties', 'source_updated_at', 'program_id', 'scope'], array_keys($row));

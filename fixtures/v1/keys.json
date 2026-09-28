@@ -1,3 +1,4 @@
 {
-    "texstar:comcast": "golden-fixture-key"
+    "texstar:comcast": "golden-fixture-key",
+    "other:pair": "golden-fixture-key-other-pair"
 }

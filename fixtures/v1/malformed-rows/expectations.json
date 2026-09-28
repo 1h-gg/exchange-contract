@@ -1,0 +1,43 @@
+{
+    "description": "One PMO -> NESC stream with a valid row (seq 0), a row missing its required key field (seq 1, schema_invalid), a line that is not JSON (seq 2, invalid_json) and a schema-valid row whose key is blank (seq 3, row_key). The package stays valid; each bad line is a (key, seq) reject with these receipt codes.",
+    "kind": "package",
+    "direction": "pmo_to_nesc",
+    "key_id": "texstar:comcast",
+    "scope": {
+        "tenant": "texstar",
+        "contract": "comcast",
+        "program": "comcast-nesc",
+        "instance": null
+    },
+    "scope_declared": true,
+    "verify": "ok",
+    "validate": "ok",
+    "violations": [],
+    "hashes": "ok",
+    "streams": {
+        "dailies": {
+            "rows": 1,
+            "rejects": 3,
+            "rejected_rows": [
+                {
+                    "seq": 1,
+                    "code": "schema_invalid"
+                },
+                {
+                    "seq": 2,
+                    "code": "invalid_json"
+                },
+                {
+                    "seq": 3,
+                    "code": "row_key"
+                }
+            ]
+        }
+    },
+    "skipped": [],
+    "receipts": 0,
+    "build": {
+        "recompute": true,
+        "sign": "valid"
+    }
+}

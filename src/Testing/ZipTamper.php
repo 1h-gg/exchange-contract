@@ -50,6 +50,39 @@ final class ZipTamper
         file_put_contents($zipPath, $data);
     }
 
+    /**
+     * Rename one entry in place (local header AND central directory) to a name of the same length, so a
+     * test can build a zip that names an entry twice — ZipArchive itself refuses to write one.
+     */
+    public static function renameEntry(string $zipPath, string $from, string $to): void
+    {
+        if (strlen($from) !== strlen($to)) {
+            throw new \InvalidArgumentException('renameEntry needs names of the same length');
+        }
+        $data = (string) file_get_contents($zipPath);
+        $eocd = strrpos($data, self::EOCD_SIG);
+        if ($eocd === false) {
+            throw new \RuntimeException('No end-of-central-directory record');
+        }
+        $count = unpack('v', substr($data, $eocd + 10, 2))[1];
+        $offset = unpack('V', substr($data, $eocd + 16, 4))[1];
+        for ($i = 0; $i < $count; $i++) {
+            $nameLen = unpack('v', substr($data, $offset + 28, 2))[1];
+            $extraLen = unpack('v', substr($data, $offset + 30, 2))[1];
+            $commentLen = unpack('v', substr($data, $offset + 32, 2))[1];
+            if (substr($data, $offset + 46, $nameLen) === $from) {
+                $local = unpack('V', substr($data, $offset + 42, 4))[1];
+                $data = substr_replace($data, $to, $offset + 46, $nameLen);
+                $data = substr_replace($data, $to, $local + 30, $nameLen);
+                file_put_contents($zipPath, $data);
+
+                return;
+            }
+            $offset += 46 + $nameLen + $extraLen + $commentLen;
+        }
+        throw new \RuntimeException('Entry not found: '.$from);
+    }
+
     /** Flip one byte inside a STORED entry's data (streams are deflated, so use it on blobs or rewrite the zip instead). */
     public static function flipStoredByte(string $zipPath, string $entry, int $at = 0): void
     {

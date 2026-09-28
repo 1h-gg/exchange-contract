@@ -1,0 +1,30 @@
+{
+    "description": "Declares texstar/comcast/comcast-nesc but is signed with another pair's key (other:pair, also in the ring). The signature verifies; the key is not the key of the declared scope, so the package is refused: scope_mismatch.",
+    "kind": "package",
+    "direction": "pmo_to_nesc",
+    "key_id": "other:pair",
+    "scope": {
+        "tenant": "texstar",
+        "contract": "comcast",
+        "program": "comcast-nesc",
+        "instance": null
+    },
+    "scope_declared": true,
+    "verify": "ok",
+    "scope_binding": "scope_mismatch",
+    "validate": "ok",
+    "violations": [],
+    "hashes": "ok",
+    "streams": {
+        "packets_wanted": {
+            "rows": 1,
+            "rejects": 0
+        }
+    },
+    "skipped": [],
+    "receipts": 0,
+    "build": {
+        "recompute": true,
+        "sign": "valid"
+    }
+}

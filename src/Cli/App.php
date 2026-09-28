@@ -23,8 +23,10 @@ use Texstar\Exchange\Testing\FixtureSigner;
  *   exchange schemas:audit                            keyword audit of schemas/v1
  *   exchange package:inspect <zip> [--keys=id=secret,…] [--max-unpacked-mb=N]
  *
- * Tokens may come from the environment instead of the command line: EXCHANGE_FROM_TOKEN,
- * EXCHANGE_TO_TOKEN, EXCHANGE_TOKEN (they never appear in `ps` output that way).
+ * Tokens come, best first, from `--<flag>-file=PATH`, the environment (EXCHANGE_FROM_TOKEN,
+ * EXCHANGE_TO_TOKEN, EXCHANGE_TOKEN) or the flag itself, which is warned about because it shows in `ps`
+ * output and shell history. Base URLs must be https unless the host is localhost / 127.0.0.1 / ::1 or
+ * `--insecure` is given.
  */
 final class App
 {
@@ -54,7 +56,7 @@ final class App
         $this->err = $err ?? static function (string $line): void {
             fwrite(STDERR, $line."\n");
         };
-        $this->clientFactory = $clientFactory ?? static fn (string $url, string $token): RunnerClient => new RunnerClient($url, $token);
+        $this->clientFactory = $clientFactory ?? static fn (string $url, string $token, bool $insecure = false): RunnerClient => new RunnerClient($url, $token, allowInsecure: $insecure);
         $this->env = $env ?? array_filter(getenv(), 'is_string');
     }
 
@@ -120,7 +122,8 @@ final class App
             '  push-updates <file.xlsx> --url=URL [--token=T] [--dry-run] [--create]',
             '  fixtures:sign [--fixture=NAME]     fixtures:build NAME [--out=ZIP]     suite:run',
             '  schemas:audit     package:inspect <zip> [--keys=id=secret,...] [--max-unpacked-mb=N]',
-            'tokens: --from-token/--to-token/--token or EXCHANGE_FROM_TOKEN / EXCHANGE_TO_TOKEN / EXCHANGE_TOKEN',
+            'tokens: EXCHANGE_FROM_TOKEN / EXCHANGE_TO_TOKEN / EXCHANGE_TOKEN, or --<flag>-file=PATH; a --token flag works but is warned about (ps, history)',
+            'urls: https only, except localhost / 127.0.0.1 / ::1 or with --insecure',
         ]));
 
         return $code;

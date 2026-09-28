@@ -64,7 +64,7 @@ final class PackageRoundTripTest extends TestCase
         $this->assertSame([], array_map('strval', $r->validateManifest()));
         $this->assertTrue($r->negotiation()->accepted);
         $this->assertSame(['readiness', 'packets_wanted', 'worker_activity'], $r->negotiation()->streams);
-        $this->assertSame(['streams/readiness.ndjson', 'streams/packets_wanted.ndjson', 'streams/worker_activity.ndjson', 'files/'.$sha], $r->checkHashes());
+        $this->assertSame(['streams/readiness.ndjson', 'streams/packets_wanted.ndjson', 'streams/worker_activity.ndjson', 'files/'.$sha, 'receipt.json'], $r->checkHashes());
 
         $m = $r->manifestDto();
         $this->assertSame('package', $m->kind);
@@ -442,6 +442,99 @@ final class PackageRoundTripTest extends TestCase
         $b->finalize(new Signer, $this->ring(), 'texstar:comcast');
         $this->expectException(PackageException::class);
         $b->addStreamRows('jobs', []);
+    }
+
+    public function test_a_zip_naming_one_entry_twice_is_refused_at_open(): void
+    {
+        $path = $this->tempPath();
+        $zip = new \ZipArchive;
+        $zip->open($path, \ZipArchive::CREATE);
+        $zip->addFromString('manifest.json', '{}');
+        $zip->addFromString('streams/aaaa.ndjson', "{}\n");
+        $zip->addFromString('streams/bbbb.ndjson', "{}\n");
+        $zip->close();
+        ZipTamper::renameEntry($path, 'streams/bbbb.ndjson', 'streams/aaaa.ndjson');
+
+        try {
+            PackageReader::open($path);
+            $this->fail('expected duplicate_entry');
+        } catch (PackageException $e) {
+            $this->assertSame('duplicate_entry', $e->wireCode());
+        }
+    }
+
+    public function test_receipt_json_is_hash_bound_and_only_declared_receipts_are_returned(): void
+    {
+        [$path] = $this->buildReference();
+        $m = PackageReader::open($path)->manifest();
+        $this->assertCount(1, $m['receipts']);
+        $this->assertMatchesRegularExpression('/^[a-f0-9]{64}$/', $m['receipts'][0]['sha256']);
+        $this->assertIsInt($m['receipts'][0]['bytes']);
+
+        // An edited receipt.json under the untouched signed manifest: refused by checkHashes() AND receipts().
+        $zip = new \ZipArchive;
+        $zip->open($path);
+        $doc = json_decode((string) $zip->getFromName('receipt.json'), true);
+        $doc['receipts'][0]['streams']['jobs']['rejected_rows'] = [];
+        $zip->addFromString('receipt.json', json_encode($doc));
+        $zip->close();
+        $r = PackageReader::open($path);
+        $r->verify($this->ring());
+        foreach (['checkHashes', 'receipts'] as $method) {
+            try {
+                $r->{$method}();
+                $this->fail($method.' accepted a tampered receipt.json');
+            } catch (HashMismatchException $e) {
+                $this->assertSame('hash_mismatch', $e->wireCode());
+                $this->assertSame('receipt.json', $e->entry);
+            }
+        }
+    }
+
+    public function test_receipts_for_undeclared_package_ids_are_ignored(): void
+    {
+        $path = $this->tempPath();
+        $b = PackageBuilder::open($path, $this->draft());
+        $receipt = fn (string $id) => (new ReceiptBuilder($id, new Producer('pmo'), Scope::unscoped()))->received('readiness', 1)->build();
+        $b->addReceipts([$receipt('1f3a1b2c-4d5e-4f60-8a71-8293a4b5c6d7'), $receipt('2f3a1b2c-4d5e-4f60-8a71-8293a4b5c6d7')]);
+        $b->finalize(new Signer, $this->ring(), 'texstar:comcast');
+        $this->assertCount(2, PackageReader::open($path)->receipts());
+
+        // A manifest that declares only the first: the second receipt inside receipt.json is dropped.
+        $this->rewriteManifest($path, function (array $m): array {
+            $m['receipts'] = [$m['receipts'][0]];
+
+            return $m;
+        });
+        $ids = array_map(fn ($r) => $r->packageId, PackageReader::open($path)->receipts());
+        $this->assertSame(['1f3a1b2c-4d5e-4f60-8a71-8293a4b5c6d7'], $ids);
+    }
+
+    public function test_assert_scope_binds_the_key_to_the_scope_and_the_scope_to_the_instance(): void
+    {
+        $ring = KeyRing::fromEnvString('texstar:comcast=golden-fixture-key,other:pair=other-secret');
+        $build = function (?Scope $scope, string $keyId) use ($ring): PackageReader {
+            $path = $this->tempPath();
+            $b = PackageBuilder::open($path, $this->draft('package', 'pmo_to_nesc', $scope));
+            $b->addStreamRows('packets_wanted', [['job_number' => 'JB000001']]);
+            $b->finalize(new Signer, $ring, $keyId);
+            $r = PackageReader::open($path);
+            $r->verify($ring);
+
+            return $r;
+        };
+        $local = Scope::unscoped();
+        $build(null, 'texstar:comcast')->assertScope($local); // unscoped resolves to texstar/comcast/comcast-nesc
+        $build(Scope::resolve(['program' => 'comcast-nesc']), 'texstar:comcast')->assertScope($local);
+
+        foreach ([[null, 'other:pair'], [Scope::resolve(['program' => 'comcast-other']), 'texstar:comcast'], [Scope::resolve(['contract' => 'pair', 'tenant' => 'other']), 'other:pair']] as [$scope, $keyId]) {
+            try {
+                $build($scope, $keyId)->assertScope($local);
+                $this->fail('expected scope_mismatch for '.$keyId.' '.json_encode($scope?->toArray()));
+            } catch (PackageException $e) {
+                $this->assertSame('scope_mismatch', $e->wireCode());
+            }
+        }
     }
 
     /** Replace manifest.json in place (the signature is left as the callback returns it). */

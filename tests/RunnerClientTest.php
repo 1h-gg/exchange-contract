@@ -278,4 +278,18 @@ final class RunnerClientTest extends TestCase
         $this->assertSame('readiness@1', $page['schema']);
         $this->assertStringEndsWith('/streams/readiness?limit=2', $t->requests[0]['url']);
     }
+
+    public function test_a_non_https_base_url_is_refused_unless_local_or_explicitly_allowed(): void
+    {
+        $t = new FakeTransport;
+        try {
+            new RunnerClient('http://nesc.example', 'tok', $t);
+            $this->fail('http:// to a remote host must be refused');
+        } catch (\InvalidArgumentException $e) {
+            $this->assertStringContainsString('non-https', $e->getMessage());
+        }
+        $this->assertSame('http://localhost:8000'.self::P, (new RunnerClient('http://localhost:8000', 'tok', $t))->baseUrl());
+        $this->assertSame('http://127.0.0.1'.self::P, (new RunnerClient('http://127.0.0.1', 'tok', $t))->baseUrl());
+        $this->assertSame('http://nesc.example'.self::P, (new RunnerClient('http://nesc.example', 'tok', $t, allowInsecure: true))->baseUrl());
+    }
 }

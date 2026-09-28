@@ -15,7 +15,7 @@ final class PushUpdatesCommand
     /** @var callable(string): void */
     private $err;
 
-    /** @var callable(string, string): RunnerClient */
+    /** @var callable(string, string, bool): RunnerClient */
     private $clientFactory;
 
     /** @param callable(string): void $out @param callable(string): void $err @param callable(string, string): RunnerClient $clientFactory @param array<string, string> $env */
@@ -34,11 +34,11 @@ final class PushUpdatesCommand
             throw new \InvalidArgumentException('Workbook not found: '.$file);
         }
         $url = is_string($options['url'] ?? null) ? $options['url'] : throw new \InvalidArgumentException('--url is required');
-        $token = is_string($options['token'] ?? null) ? $options['token'] : ($this->env['EXCHANGE_TOKEN'] ?? throw new \InvalidArgumentException('--token or EXCHANGE_TOKEN is required'));
+        $token = Tokens::resolve($options, 'token', ['EXCHANGE_TOKEN'], $this->env, $this->err) ?? throw new \InvalidArgumentException('EXCHANGE_TOKEN, --token-file or --token is required');
         $dryRun = ($options['dry-run'] ?? false) === true;
         $create = ($options['create'] ?? false) === true;
 
-        $client = ($this->clientFactory)($url, $token);
+        $client = ($this->clientFactory)($url, $token, ($options['insecure'] ?? false) === true);
         $result = $client->pushUpdatesWorkbook($file, $dryRun, $create);
         if (isset($result['status_url'])) {
             ($this->out)(sprintf('batch %s queued (%d ops): poll %s', (string) ($result['batch_id'] ?? '-'), (int) ($result['ops'] ?? 0), (string) $result['status_url']));

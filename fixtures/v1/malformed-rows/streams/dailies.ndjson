@@ -1,0 +1,4 @@
+{"daily":"FC-2026-09-01-0451","jb":"JB0002685018","job":"JB0002685018","work_date":"2026-09-01","market":"Oregon","customer":"Comcast","area":"Portland","supervisor":"Super Visor","spv":"Super Visor","foreman_name":"Fore Man","crew":"Crew 7","state":"approved","approved":true,"over48":false,"url":"https://pm.texstar.app/dailies/FC-2026-09-01-0451","work_items":[{"seq":1,"unit_code":"A8X","quantity":"2","qty_num":2.0,"description":"Aerial"},{"seq":2,"unit_code":"E1X","quantity":"1","qty_num":1.0,"description":"Walkout"}],"scope":{"tenant":"texstar","contract":"comcast","program":"comcast-nesc","instance":null}}
+{"jb":"JB0002685018","work_items":[],"scope":{"tenant":"texstar","contract":"comcast","program":"comcast-nesc","instance":null}}
+{this is not json
+{"daily":"   ","jb":"JB0002685018","scope":{"tenant":"texstar","contract":"comcast","program":"comcast-nesc","instance":null}}

@@ -11,7 +11,7 @@ use Texstar\Exchange\Signing\Signer;
 /**
  * `bin/exchange fixtures:sign`: rewrites each fixture tree's manifest.json from its expectations.json
  * `build` block — {recompute: bool, sign: "valid" | "wrong-secret" | "none"}. recompute refreshes
- * files[].rows/bytes/sha256 and blobs[].bytes from the tree (off for the tampered fixtures, whose
+ * files[].rows/bytes/sha256, blobs[].bytes and receipts[].sha256/bytes from the tree (off for the tampered fixtures, whose
  * manifests must keep describing the ORIGINAL bytes); sign writes the HMAC with the golden key, a
  * wrong secret, or `signature: null`. The output is committed: readers never need this class.
  */
@@ -88,6 +88,14 @@ final class FixtureSigner
             }
             $manifest['blobs'][$i]['bytes'] = filesize($path);
             $manifest['blobs'][$i]['path'] = Contract::blobEntry($sha);
+        }
+        $receipt = $dir.'/'.Contract::RECEIPT_ENTRY;
+        if (is_file($receipt)) {
+            $bytes = (string) file_get_contents($receipt);
+            foreach (is_array($manifest['receipts'] ?? null) ? $manifest['receipts'] : [] as $i => $ref) {
+                $manifest['receipts'][$i]['sha256'] = hash('sha256', $bytes);
+                $manifest['receipts'][$i]['bytes'] = strlen($bytes);
+            }
         }
 
         return $manifest;

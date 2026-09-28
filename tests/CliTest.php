@@ -6,6 +6,7 @@ namespace Texstar\Exchange\Tests;
 
 use PHPUnit\Framework\TestCase;
 use Texstar\Exchange\Cli\App;
+use Texstar\Exchange\Cli\Tokens;
 use Texstar\Exchange\Client\RunnerClient;
 use Texstar\Exchange\Testing\ContractSuite;
 use Texstar\Exchange\Tests\Support\FakeTransport;
@@ -138,7 +139,7 @@ final class CliTest extends TestCase
     public function test_fixture_commands_and_the_suite(): void
     {
         $this->assertSame(0, $this->app()->run(['suite:run']));
-        $this->assertCount(12, $this->out);
+        $this->assertCount(16, $this->out);
         foreach ($this->out as $line) {
             $this->assertStringEndsWith(' ok', $line);
         }
@@ -157,5 +158,28 @@ final class CliTest extends TestCase
         $this->assertSame(['schemas/v1: clean'], $this->out);
         $this->assertSame(0, $this->app()->run(['fixtures:sign', '--fixture=unscoped']));
         $this->assertSame(['unscoped             signed'], $this->out);
+    }
+
+    public function test_a_token_flag_is_warned_about_and_a_token_file_is_read(): void
+    {
+        $this->assertSame('from-file', Tokens::resolve(['token-file' => $this->tokenFile('from-file')], 'token', ['EXCHANGE_TOKEN'], ['EXCHANGE_TOKEN' => 'env'], function (string $l): void {
+            $this->fail('a token file is not warned about');
+        }));
+        $warnings = [];
+        $warn = function (string $l) use (&$warnings): void {
+            $warnings[] = $l;
+        };
+        $this->assertSame('env', Tokens::resolve(['token' => 'flag'], 'token', ['EXCHANGE_TOKEN'], ['EXCHANGE_TOKEN' => 'env'], $warn));
+        $this->assertSame([], $warnings, 'the environment wins over the flag, silently');
+        $this->assertSame('flag', Tokens::resolve(['token' => 'flag'], 'token', ['EXCHANGE_TOKEN'], [], $warn));
+        $this->assertStringContainsString('ps output and shell history', $warnings[0]);
+    }
+
+    private function tokenFile(string $token): string
+    {
+        $path = (string) tempnam(sys_get_temp_dir(), 'txx-token');
+        file_put_contents($path, $token."\n");
+
+        return $path;
     }
 }

@@ -193,14 +193,21 @@ final class PackageBuilder
             return;
         }
         $document = ['format' => Contract::RECEIPT_FORMAT, 'version' => Contract::MAJOR, 'receipts' => []];
+        $packageIds = [];
         foreach ($receipts as $receipt) {
             if (! $receipt instanceof Receipt) {
                 throw new PackageException('addReceipts() takes Receipt DTOs', 'receipt_invalid');
             }
             $document['receipts'][] = $receipt->toArray();
-            $this->receipts[] = new ReceiptRef($receipt->packageId, Contract::RECEIPT_ENTRY);
+            $packageIds[] = $receipt->packageId;
         }
-        $this->zip->addFromString(Contract::RECEIPT_ENTRY, json_encode($document, self::ROW_FLAGS));
+        // receipt.json is bound into the signed manifest by its hash and length, like a stream file.
+        $bytes = json_encode($document, self::ROW_FLAGS);
+        $sha = hash('sha256', $bytes);
+        foreach ($packageIds as $packageId) {
+            $this->receipts[] = new ReceiptRef($packageId, Contract::RECEIPT_ENTRY, $sha, strlen($bytes));
+        }
+        $this->zip->addFromString(Contract::RECEIPT_ENTRY, $bytes);
     }
 
     /** Signed finalize: composes the manifest, signs it with `$keyId` from the ring, writes manifest.json last. */

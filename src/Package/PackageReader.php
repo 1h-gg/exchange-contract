@@ -7,6 +7,7 @@ namespace Texstar\Exchange\Package;
 use Texstar\Exchange\Contract;
 use Texstar\Exchange\Dto\Manifest;
 use Texstar\Exchange\Dto\Receipt;
+use Texstar\Exchange\Dto\Scope;
 use Texstar\Exchange\Schema\SchemaRegistry;
 use Texstar\Exchange\Schema\Violation;
 use Texstar\Exchange\Signing\KeyRing;
@@ -18,8 +19,12 @@ use Texstar\Exchange\Signing\Verifier;
  * entry that inflates past the size its central-directory record declares is cut off after at most one
  * read buffer. Entry names are only ever the validated manifest paths, never filesystem components.
  *
- * Order of use: open() -> manifest() -> verify(ring) -> validateManifest() -> declaredSize() ->
- * checkHashes() -> rows()/blob()/receipts().
+ * Order of use: open() -> manifest() -> verify(ring) -> assertScope(local) -> validateManifest() ->
+ * declaredSize() -> checkHashes() -> rows()/blob()/receipts().
+ *
+ * A zip whose central directory names one entry twice is refused at open (`duplicate_entry`):
+ * libzip opens the FIRST record by name while a name index keeps the last, so a duplicate could
+ * show one reader different bytes from the ones that were verified.
  */
 final class PackageReader
 {
@@ -49,9 +54,13 @@ final class PackageReader
         }
         for ($i = 0; $i < $this->zip->numFiles; $i++) {
             $stat = $this->zip->statIndex($i);
-            if ($stat !== false) {
-                $this->index[$stat['name']] = $i;
+            if ($stat === false) {
+                continue;
             }
+            if (isset($this->index[$stat['name']])) {
+                throw new PackageException('Zip names entry '.json_encode($stat['name'], JSON_UNESCAPED_SLASHES).' more than once', 'duplicate_entry');
+            }
+            $this->index[$stat['name']] = $i;
         }
         if (! isset($this->index[Contract::MANIFEST_ENTRY])) {
             throw new PackageException('Package has no manifest.json', 'manifest_missing');
@@ -98,6 +107,28 @@ final class PackageReader
     public function verify(KeyRing $ring): void
     {
         (new Verifier)->verify($this->manifest, $ring);
+    }
+
+    /**
+     * Bind the verified signature to the package's own scope and to the scope this reader serves:
+     * `signature.key_id` must be the "<tenant>:<contract>" of the manifest's resolved scope (an
+     * unscoped manifest resolves to Scope::UNSCOPED, so it must be signed `texstar:comcast`), and that
+     * scope's tenant, contract and program must equal `$local`'s. `kind = rows` packages carry no
+     * signature, so only the scope half applies to them. Call it after verify(); throws
+     * {@see ScopeMismatchException} (`scope_mismatch`).
+     */
+    public function assertScope(Scope $local): void
+    {
+        $scope = $this->manifestDto()->resolvedScope();
+        if ($this->kind() !== Contract::KIND_ROWS) {
+            $keyId = is_array($this->manifest['signature'] ?? null) ? ($this->manifest['signature']['key_id'] ?? null) : null;
+            if ($keyId !== $scope->keyId()) {
+                throw new ScopeMismatchException('signature.key_id '.json_encode($keyId).' is not the key of the package scope '.json_encode($scope->keyId()));
+            }
+        }
+        if (! $scope->sameProgramAs($local)) {
+            throw new ScopeMismatchException(sprintf('package scope %s/%s/%s is not this instance\'s %s/%s/%s', $scope->tenant, $scope->contract, $scope->program, $local->tenant, $local->contract, $local->program));
+        }
     }
 
     /**
@@ -286,19 +317,84 @@ final class PackageReader
             }
             $checked[] = $path;
         }
+        if ($this->receiptRefs() !== []) {
+            $this->receiptDocument();
+            $checked[] = Contract::RECEIPT_ENTRY;
+        }
 
         return $checked;
     }
 
-    /** @return list<Receipt> */
+    /**
+     * The receipts receipt.json carries for the package ids the signed manifest declares in
+     * `receipts[]`; a receipt for any other package id is dropped. receipt.json must hash to the
+     * manifest's receipts[].sha256 / bytes (HashMismatchException otherwise), so a receipt can never be
+     * swapped or edited under a valid signature.
+     *
+     * @return list<Receipt>
+     */
     public function receipts(): array
     {
-        $refs = is_array($this->manifest['receipts'] ?? null) ? $this->manifest['receipts'] : [];
-        if ($refs === [] || ! isset($this->index[Contract::RECEIPT_ENTRY])) {
+        $refs = $this->receiptRefs();
+        if ($refs === []) {
             return [];
         }
+        $declared = [];
+        foreach ($refs as $ref) {
+            $declared[strtolower((string) ($ref['package_id'] ?? ''))] = true;
+        }
+        $out = [];
+        foreach ($this->receiptDocument()['receipts'] as $receipt) {
+            if (is_array($receipt) && isset($declared[strtolower((string) ($receipt['package_id'] ?? ''))])) {
+                $out[] = Receipt::fromArray($receipt);
+            }
+        }
+
+        return $out;
+    }
+
+    /** @return list<array<string, mixed>> the manifest's receipts[] entries */
+    private function receiptRefs(): array
+    {
+        $refs = is_array($this->manifest['receipts'] ?? null) ? $this->manifest['receipts'] : [];
+
+        return array_values(array_filter($refs, 'is_array'));
+    }
+
+    /**
+     * receipt.json, hash- and length-checked against the manifest's receipts[] (every entry must
+     * declare the same sha256 and bytes) under the inflate guard, then decoded.
+     *
+     * @return array{format: string, receipts: list<mixed>}
+     */
+    private function receiptDocument(): array
+    {
+        $shas = [];
+        $lengths = [];
+        foreach ($this->receiptRefs() as $ref) {
+            $shas[strtolower((string) ($ref['sha256'] ?? ''))] = true;
+            $lengths[(string) ($ref['bytes'] ?? '')] = true;
+        }
+        $sha = (string) array_key_first($shas);
+        if (count($shas) !== 1 || ! preg_match(Contract::SHA256_PATTERN, $sha)) {
+            throw new HashMismatchException(Contract::RECEIPT_ENTRY, 'manifest receipts[] must all carry the same sha256 of receipt.json');
+        }
+        $declaredBytes = count($lengths) === 1 && is_numeric(array_key_first($lengths)) ? (int) array_key_first($lengths) : null;
+        if ($declaredBytes === null) {
+            throw new HashMismatchException(Contract::RECEIPT_ENTRY, 'manifest receipts[] must all carry the same byte count of receipt.json');
+        }
+        if (! isset($this->index[Contract::RECEIPT_ENTRY])) {
+            throw new PackageException('Zip has no entry '.Contract::RECEIPT_ENTRY, 'missing_entry');
+        }
+        $raw = $this->readWhole(Contract::RECEIPT_ENTRY, Contract::MAX_MANIFEST_BYTES);
+        if (! hash_equals($sha, hash('sha256', $raw))) {
+            throw new HashMismatchException(Contract::RECEIPT_ENTRY, 'sha256 does not match the manifest');
+        }
+        if (strlen($raw) !== $declaredBytes) {
+            throw new HashMismatchException(Contract::RECEIPT_ENTRY, 'byte count does not match the manifest');
+        }
         try {
-            $document = json_decode($this->readWhole(Contract::RECEIPT_ENTRY, Contract::MAX_MANIFEST_BYTES), true, 64, JSON_THROW_ON_ERROR);
+            $document = json_decode($raw, true, 64, JSON_THROW_ON_ERROR);
         } catch (\JsonException) {
             throw new PackageException('receipt.json is not valid JSON', 'receipt_invalid');
         }
@@ -306,7 +402,7 @@ final class PackageReader
             throw new PackageException('receipt.json is not a '.Contract::RECEIPT_FORMAT.' document', 'receipt_invalid');
         }
 
-        return array_values(array_map(Receipt::fromArray(...), array_filter($document['receipts'], 'is_array')));
+        return $document;
     }
 
     public function close(): void

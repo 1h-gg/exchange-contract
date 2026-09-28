@@ -53,6 +53,12 @@ final readonly class Scope
         return $this->tenant.':'.$this->contract;
     }
 
+    /** Same tenant, contract and program (the instance is informational and never compared). */
+    public function sameProgramAs(self $other): bool
+    {
+        return $this->tenant === $other->tenant && $this->contract === $other->contract && $this->program === $other->program;
+    }
+
     public function isUnscoped(): bool
     {
         return $this->toArray() === self::UNSCOPED;

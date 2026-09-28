@@ -22,7 +22,7 @@ final class SyncCommand
     /** @var callable(string): void */
     private $err;
 
-    /** @var callable(string, string): RunnerClient */
+    /** @var callable(string, string, bool): RunnerClient */
     private $clientFactory;
 
     /** @param callable(string): void $out @param callable(string): void $err @param callable(string, string): RunnerClient $clientFactory @param array<string, string> $env */
@@ -43,16 +43,17 @@ final class SyncCommand
         }
         $fromUrl = $this->string($options, 'from-url') ?? throw new \InvalidArgumentException('--from-url is required');
         $toUrl = $this->string($options, 'to-url') ?? throw new \InvalidArgumentException('--to-url is required');
-        $fromToken = $this->string($options, 'from-token') ?? $this->env['EXCHANGE_FROM_TOKEN'] ?? $this->env['EXCHANGE_TOKEN'] ?? throw new \InvalidArgumentException('--from-token or EXCHANGE_FROM_TOKEN is required');
-        $toToken = $this->string($options, 'to-token') ?? $this->env['EXCHANGE_TO_TOKEN'] ?? $this->env['EXCHANGE_TOKEN'] ?? throw new \InvalidArgumentException('--to-token or EXCHANGE_TO_TOKEN is required');
+        $fromToken = Tokens::resolve($options, 'from-token', ['EXCHANGE_FROM_TOKEN', 'EXCHANGE_TOKEN'], $this->env, $this->err) ?? throw new \InvalidArgumentException('EXCHANGE_FROM_TOKEN, --from-token-file or --from-token is required');
+        $toToken = Tokens::resolve($options, 'to-token', ['EXCHANGE_TO_TOKEN', 'EXCHANGE_TOKEN'], $this->env, $this->err) ?? throw new \InvalidArgumentException('EXCHANGE_TO_TOKEN, --to-token-file or --to-token is required');
+        $insecure = ($options['insecure'] ?? false) === true;
         $timeout = (float) ($this->string($options, 'timeout') ?? 600);
         $interval = (float) ($this->string($options, 'interval') ?? 5);
         $includeBlobs = ($options['include-blobs'] ?? false) === true;
         $program = $this->string($options, 'program');
         $keep = ($options['keep'] ?? false) === true;
 
-        $source = ($this->clientFactory)($fromUrl, $fromToken);
-        $target = ($this->clientFactory)($toUrl, $toToken);
+        $source = ($this->clientFactory)($fromUrl, $fromToken, $insecure);
+        $target = ($this->clientFactory)($toUrl, $toToken, $insecure);
         $code = $this->direction($from, $to, $source, $target, $includeBlobs, $program, $timeout, $interval, $keep);
         if (($options['both'] ?? false) === true) {
             $code = max($code, $this->direction($to, $from, $target, $source, $includeBlobs, $program, $timeout, $interval, $keep));

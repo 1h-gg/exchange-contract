@@ -989,7 +989,7 @@
         "/inbound/{uuid}/apply": {
             "post": {
                 "operationId": "exchange.inbound.apply",
-                "description": "Owner only; 409 unless the import is `previewed`. `allow_large_drop` lets a full poles set past the\ndrop guard. Runs off the request (202).",
+                "description": "Owner only; 409 unless the import is `previewed`. `allow_large_drop` lets a full poles set past the\ndrop guard. Runs off the request (202); the apply is claimed atomically, so a second request for\nthe same import applies nothing.",
                 "summary": "Apply a previewed import",
                 "tags": [
                     "Inbound"
@@ -1144,7 +1144,7 @@
         "/inbound/{uuid}/chunks": {
             "post": {
                 "operationId": "exchange.inbound.chunk",
-                "description": "`{uuid}` is a client-generated v4 uuid. The first chunk creates the `uploading` import owned by the\ncaller (409 `conflict` when the uuid exists under another principal); `chunk_index` / `total_chunks`\n(<= max_chunks) / `checksum` (sha256 of the chunk body). The same (index, checksum) again is\nidempotent; the same index under another checksum is 409; a running total over `max_package_mb`\nis 413 `package_too_large` and fails the import.",
+                "description": "`{uuid}` is a client-generated v4 uuid. The first chunk creates the `uploading` import owned by the\ncaller (409 `conflict` when the uuid exists under another principal); `chunk_index` / `total_chunks`\n(<= max_chunks) / `checksum` (sha256 of the chunk body). The same (index, checksum) again is\nidempotent; the same index under another checksum is 409; a running total over `max_package_mb`\nis 413 `package_too_large` and fails the import. A principal may hold at most three unfinished\nuploads (409 `too_many_uploads`); an upload idle for 24 hours is removed by exchange:prune.",
                 "summary": "Upload one chunk",
                 "tags": [
                     "Inbound"
@@ -1647,7 +1647,7 @@
         "/rows/{stream}": {
             "post": {
                 "operationId": "exchange.rows.store",
-                "description": "`{rows: [...]}` (JSON) or one row per line as `application/x-ndjson`, at most 500 rows; `dry_run=1`\npreviews without applying. The answer lists a verdict per row by `seq` and `key`\n(applied | accepted | rejected | refused).",
+                "description": "`{rows: [...]}` (JSON) or one row per line as `application/x-ndjson`, at most 500 rows; `dry_run=1`\npreviews without applying. The answer lists a verdict per row by `seq` and `key`\n(applied | accepted | rejected | refused). Delta streams only: a full-mode stream (poles,\npackets_wanted, gis_sources, gis_features, pge_violations) replaces the whole set, so it is 422\n`full_stream_requires_package` and travels only in a signed package.",
                 "summary": "Push rows of a stream",
                 "tags": [
                     "Rows"

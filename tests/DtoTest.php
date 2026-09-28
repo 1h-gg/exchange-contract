@@ -133,12 +133,12 @@ final class DtoTest extends TestCase
     public function test_update_op_and_row_verdict(): void
     {
         $op = UpdateOp::fromArray(['id' => 'u1', 'op' => 'update', 'entity' => 'job', 'key' => 'JB000001', 'field' => 'folder_link', 'value' => 'https://x', 'reason' => 'r', 'program' => null, 'origin' => 'smartsheet', 'origin_ref' => ['sheet' => 1], 'extra_key' => 1]);
-        $this->assertTrue($op->isSupportedIn1b());
+        $this->assertTrue($op->isBasic());
         $this->assertSame('smartsheet', $op->toArray()['origin']);
         $this->assertSame(1, $op->toArray()['extra_key']);
-        $this->assertFalse(UpdateOp::fromArray(['op' => 'override'])->isSupportedIn1b());
+        $this->assertFalse(UpdateOp::fromArray(['op' => 'override'])->isBasic());
         $this->assertArrayNotHasKey('origin', UpdateOp::fromArray(['op' => 'clear'])->toArray());
-        $this->assertSame(['update', 'clear'], UpdateOp::OPS_1B);
+        $this->assertSame(['update', 'clear'], UpdateOp::OPS_BASIC);
 
         $v = RowVerdict::fromArray(['seq' => 3, 'key' => 'JB000001', 'outcome' => 'unsupported_until_1d', 'message' => 'x', 'op_id' => 'u1']);
         $this->assertSame('u1', $v->toArray()['op_id']);

@@ -5,14 +5,15 @@ declare(strict_types=1);
 namespace Texstar\Exchange\Dto;
 
 /**
- * One targeted bulk update (updates.schema.json). 1b supports `update` and `clear`; the other ops are
- * reserved for 1d's EntityMutator and are answered `unsupported_until_1d` until then.
+ * One targeted bulk update (updates.schema.json). `update` and `clear` are the basic field ops every
+ * app answers; the others are reserved for an entity mutator. Which ops an app actually applies is
+ * that app's capability (NESC decides it per applier), not a property of the op.
  */
 final readonly class UpdateOp
 {
     use Extras;
 
-    public const OPS_1B = ['update', 'clear'];
+    public const OPS_BASIC = ['update', 'clear'];
 
     public const OPS_RESERVED = ['create', 'override', 'clear_override', 'delete', 'set_status', 'link_external_ref'];
 
@@ -44,9 +45,10 @@ final readonly class UpdateOp
         );
     }
 
-    public function isSupportedIn1b(): bool
+    /** `update` or `clear`: a plain field write (the reserved ops create, delete or re-state rows). */
+    public function isBasic(): bool
     {
-        return in_array($this->op, self::OPS_1B, true);
+        return in_array($this->op, self::OPS_BASIC, true);
     }
 
     /** @return array<string, mixed> */

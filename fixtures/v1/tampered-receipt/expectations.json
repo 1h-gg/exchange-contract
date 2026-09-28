@@ -1,0 +1,29 @@
+{
+    "description": "PMO -> NESC package carrying PMO's receipt for NESC package n-0001, signed; receipt.json was then edited so review_decisions' rejected row reads as accepted. The manifest binds receipt.json by sha256/bytes, so hashes -> hash_mismatch and receipts() refuses it (-1): a tampered receipt never stamps an outbox row.",
+    "kind": "package",
+    "direction": "pmo_to_nesc",
+    "key_id": "texstar:comcast",
+    "scope": {
+        "tenant": "texstar",
+        "contract": "comcast",
+        "program": "comcast-nesc",
+        "instance": null
+    },
+    "scope_declared": true,
+    "verify": "ok",
+    "validate": "ok",
+    "violations": [],
+    "hashes": "hash_mismatch",
+    "streams": {
+        "jobmaster_status": {
+            "rows": 1,
+            "rejects": 0
+        }
+    },
+    "skipped": [],
+    "receipts": -1,
+    "build": {
+        "recompute": false,
+        "sign": "valid"
+    }
+}

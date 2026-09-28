@@ -1,0 +1,30 @@
+{
+    "description": "A correctly signed PMO -> NESC package (texstar:comcast is the key of its texstar/comcast scope) for program comcast-other. A comcast-nesc instance refuses it after verify: scope_mismatch.",
+    "kind": "package",
+    "direction": "pmo_to_nesc",
+    "key_id": "texstar:comcast",
+    "scope": {
+        "tenant": "texstar",
+        "contract": "comcast",
+        "program": "comcast-other",
+        "instance": null
+    },
+    "scope_declared": true,
+    "verify": "ok",
+    "scope_binding": "scope_mismatch",
+    "validate": "ok",
+    "violations": [],
+    "hashes": "ok",
+    "streams": {
+        "packets_wanted": {
+            "rows": 1,
+            "rejects": 0
+        }
+    },
+    "skipped": [],
+    "receipts": 0,
+    "build": {
+        "recompute": true,
+        "sign": "valid"
+    }
+}

@@ -12,6 +12,7 @@ use Texstar\Exchange\Package\RowError;
 use Texstar\Exchange\Schema\SchemaRegistry;
 use Texstar\Exchange\Signing\KeyRing;
 use Texstar\Exchange\Signing\SignatureException;
+use Texstar\Exchange\Stream\RowKey;
 
 /**
  * The golden fixtures as a runnable suite either app can invoke from its own test runner.
@@ -26,11 +27,15 @@ use Texstar\Exchange\Signing\SignatureException;
  * expectations.json:
  *   kind, direction, key_id, scope {tenant, contract, program, instance}, scope_declared (bool),
  *   verify: ok | signature_missing | unknown_key_id | signature_invalid,
+ *   scope_binding: ok | scope_mismatch   (checked when verify is ok; default ok) — PackageReader::assertScope
+ *            against Scope::UNSCOPED, the texstar / comcast / comcast-nesc instance both apps serve today,
  *   validate: ok | <primary violation keyword>, violations: [keywords],
  *   hashes: ok | hash_mismatch | skipped,
- *   streams: {<name>: {rows, rejects, reject_codes?}}   rows = parsed row objects that pass the stream
- *            schema; rejects = RowError lines + schema-invalid rows,
- *   skipped: [stream names the negotiation skipped], receipts: int,
+ *   streams: {<name>: {rows, rejects, reject_codes?, rejected_rows?}}   rows = parsed row objects that
+ *            pass the stream schema and can be keyed; rejects = RowError lines + schema-invalid rows +
+ *            unkeyable rows; rejected_rows = [{seq, code}] with the receipt row codes (row_too_large,
+ *            invalid_json, schema_invalid, row_key),
+ *   skipped: [stream names the negotiation skipped], receipts: int (-1 = receipt.json refused),
  *   source: {<stream>: "producer file:line"}, build: {recompute, sign}   (used by fixtures:sign only)
  */
 final class ContractSuite
@@ -227,6 +232,19 @@ final class ContractSuite
             $problems[] = 'verify: expected '.($expected['verify'] ?? 'ok').', got '.$verify;
         }
 
+        // scope binding: the verified key belongs to the package's own scope, and that scope is ours
+        if ($verify === 'ok') {
+            $binding = 'ok';
+            try {
+                $reader->assertScope(Scope::unscoped());
+            } catch (PackageException $e) {
+                $binding = $e->wireCode();
+            }
+            if (($expected['scope_binding'] ?? 'ok') !== $binding) {
+                $problems[] = 'scope_binding: expected '.($expected['scope_binding'] ?? 'ok').', got '.$binding;
+            }
+        }
+
         // validate: schema + negotiation + path discipline
         $violations = $reader->validateManifest();
         $keywords = array_values(array_unique(array_map(static fn ($v) => $v->keyword, $violations)));
@@ -278,11 +296,13 @@ final class ContractSuite
             $rows = 0;
             $rejects = 0;
             $codes = [];
+            $rejected = [];
             try {
-                foreach ($reader->rows($stream) as $row) {
+                foreach ($reader->rows($stream) as $seq => $row) {
                     if ($row instanceof RowError) {
                         $rejects++;
                         $codes[] = $row->code;
+                        $rejected[] = ['seq' => $seq, 'code' => $row->code];
 
                         continue;
                     }
@@ -290,6 +310,14 @@ final class ContractSuite
                     if ($bad !== []) {
                         $rejects++;
                         $codes[] = 'schema:'.$bad[0]->path.':'.$bad[0]->keyword;
+                        $rejected[] = ['seq' => $seq, 'code' => 'schema_invalid'];
+
+                        continue;
+                    }
+                    if (RowKey::tryFor($stream, $row) === null) {
+                        $rejects++;
+                        $codes[] = 'row_key';
+                        $rejected[] = ['seq' => $seq, 'code' => 'row_key'];
 
                         continue;
                     }
@@ -305,6 +333,12 @@ final class ContractSuite
             }
             if (isset($counts['reject_codes']) && array_values((array) $counts['reject_codes']) !== $codes) {
                 $problems[] = 'stream '.$stream.': expected reject codes '.json_encode($counts['reject_codes']).', got '.json_encode($codes);
+            }
+            if (isset($counts['rejected_rows'])) {
+                $want = array_map(static fn ($r) => ['seq' => (int) ($r['seq'] ?? -1), 'code' => (string) ($r['code'] ?? '')], array_values((array) $counts['rejected_rows']));
+                if ($want !== $rejected) {
+                    $problems[] = 'stream '.$stream.': expected rejected rows '.json_encode($want).', got '.json_encode($rejected);
+                }
             }
         }
         $declared = array_map(static fn ($f) => (string) ($f['stream'] ?? ''), is_array($manifest['files'] ?? null) ? $manifest['files'] : []);

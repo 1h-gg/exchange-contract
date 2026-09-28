@@ -25,7 +25,14 @@
             "Texstar\\Exchange\\Tests\\": "tests/"
         }
     },
-    "bin": ["bin/exchange"],
+    "bin": [
+        "bin/exchange"
+    ],
+    "extra": {
+        "branch-alias": {
+            "dev-main": "1.0.x-dev"
+        }
+    },
     "config": {
         "sort-packages": true,
         "optimize-autoloader": true

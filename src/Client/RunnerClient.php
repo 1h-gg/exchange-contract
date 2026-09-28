@@ -53,10 +53,16 @@ final class RunnerClient
      * @param  null|callable(float): void  $sleep  seconds
      * @param  null|callable(): float  $clock  unix seconds
      * @param  null|callable(): string  $uuid  v4 generator (tests pin it)
+     * @param  bool  $allowInsecure  permit a non-https base URL on a non-local host (the bearer token would travel in clear text)
      */
-    public function __construct(string $baseUrl, private readonly string $token, ?callable $transport = null, ?callable $sleep = null, ?callable $clock = null, ?callable $uuid = null)
+    public function __construct(string $baseUrl, private readonly string $token, ?callable $transport = null, ?callable $sleep = null, ?callable $clock = null, ?callable $uuid = null, bool $allowInsecure = false)
     {
         $base = rtrim($baseUrl, '/');
+        $scheme = strtolower((string) parse_url($base, PHP_URL_SCHEME));
+        $host = strtolower(trim((string) parse_url($base, PHP_URL_HOST), '[]'));
+        if ($scheme !== 'https' && ! $allowInsecure && ! in_array($host, ['localhost', '127.0.0.1', '::1'], true)) {
+            throw new \InvalidArgumentException('The runner client sends a bearer token and refuses a non-https base URL ('.($scheme === '' ? 'no scheme' : $scheme).'://'.$host.'); use https, or allow it explicitly (--insecure).');
+        }
         $this->baseUrl = str_ends_with($base, self::PREFIX) ? $base : $base.self::PREFIX;
         $this->transport = $transport ?? new CurlTransport;
         $this->sleep = $sleep ?? static function (float $seconds): void {
