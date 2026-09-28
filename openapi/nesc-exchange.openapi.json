@@ -1797,7 +1797,7 @@
                                             "properties": {
                                                 "version": {
                                                     "type": "string",
-                                                    "const": "1.0.0"
+                                                    "const": "1.1.0"
                                                 },
                                                 "major": {
                                                     "type": "integer",
@@ -1866,6 +1866,12 @@
                                                 },
                                                 "max_unpacked_mb": {
                                                     "type": "integer"
+                                                },
+                                                "max_row_bytes": {
+                                                    "type": "integer"
+                                                },
+                                                "max_chunks": {
+                                                    "type": "integer"
                                                 }
                                             },
                                             "required": [
@@ -1874,7 +1880,9 @@
                                                 "chunk_mb",
                                                 "max_file_mb",
                                                 "max_blobs_mb",
-                                                "max_unpacked_mb"
+                                                "max_unpacked_mb",
+                                                "max_row_bytes",
+                                                "max_chunks"
                                             ]
                                         },
                                         "last_outbound": {
