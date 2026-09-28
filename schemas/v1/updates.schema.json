@@ -1,0 +1,82 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://texstar.app/exchange/v1/updates.schema.json",
+    "title": "UpdateOp",
+    "description": "One targeted bulk update (POST /api/v1/exchange/updates, the machine form of the XLSX workbook). 1b supports op = update | clear through today's write paths; create, override, clear_override, delete, set_status and link_external_ref are reserved for 1d's EntityMutator and answered unsupported_until_1d.",
+    "type": "object",
+    "required": [
+        "id",
+        "op",
+        "entity",
+        "key",
+        "field"
+    ],
+    "properties": {
+        "id": {
+            "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "op": {
+            "type": "string",
+            "enum": [
+                "update",
+                "clear",
+                "create",
+                "override",
+                "clear_override",
+                "delete",
+                "set_status",
+                "link_external_ref"
+            ]
+        },
+        "entity": {
+            "type": "string",
+            "enum": [
+                "job",
+                "task",
+                "pole",
+                "violation",
+                "hold"
+            ]
+        },
+        "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255,
+            "description": "job: JB; task: TSK or synthetic key; pole: candidate_key or \"JB|pole_identifier\"; violation: \"candidate_key|code\"; hold: JB."
+        },
+        "field": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+        },
+        "value": {
+            "description": "Ignored for clear; blank never means \"no change\" here (that is the workbook rule)."
+        },
+        "reason": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "maxLength": 500
+        },
+        "program": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "description": "Phase 1f program key; null => the scope's program."
+        },
+        "origin": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "origin_ref": {
+            "type": [
+                "object",
+                "null"
+            ]
+        }
+    }
+}

@@ -1,0 +1,155 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://texstar.app/exchange/v1/streams/worker_activity_status.schema.json",
+    "title": "worker_activity_status (external_refs:worker_activity)",
+    "description": "WaRunnerNescIngest::pull() lists flattened with kind = job | assignment; the summary travels in manifest extras.worker_activity_summary. Key: kind|id (job_number, nesc_assignment_id). Delta.",
+    "type": "object",
+    "required": [
+        "kind"
+    ],
+    "properties": {
+        "kind": {
+            "type": "string",
+            "enum": [
+                "job",
+                "assignment"
+            ]
+        },
+        "job_number": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "nesc_job_id": {
+            "type": [
+                "integer",
+                "null"
+            ]
+        },
+        "presence": {
+            "type": "string",
+            "enum": [
+                "present",
+                "missing",
+                "unknown"
+            ]
+        },
+        "reason": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "scope_of_work_id": {
+            "type": [
+                "integer",
+                "null"
+            ]
+        },
+        "scope_status": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "checked_at": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "format": "date-time"
+        },
+        "nesc_assignment_id": {
+            "type": "integer"
+        },
+        "state": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "task_number": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "wa_task_id": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "booked_at": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "format": "date-time"
+        },
+        "error": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "scope": {
+            "$ref": "../common.schema.json#/$defs/scope",
+            "description": "Stamped by the builder from the manifest scope when the emitter did not set it; absent => UNSCOPED."
+        },
+        "origin": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "description": "Phase 1e: set to \"smartsheet\" on sheet-origin rows; absent on app-origin rows."
+        },
+        "origin_ref": {
+            "type": [
+                "object",
+                "null"
+            ],
+            "description": "Phase 1e: {sheet, row, column, modifiedAt}; the receiver applies idempotently by origin_ref and never re-exports."
+        }
+    },
+    "oneOf": [
+        {
+            "type": "object",
+            "required": [
+                "kind",
+                "job_number",
+                "nesc_job_id",
+                "presence",
+                "reason",
+                "scope_of_work_id",
+                "scope_status",
+                "checked_at"
+            ],
+            "properties": {
+                "kind": {
+                    "const": "job"
+                }
+            }
+        },
+        {
+            "type": "object",
+            "required": [
+                "kind",
+                "nesc_assignment_id",
+                "job_number",
+                "state",
+                "reason",
+                "task_number",
+                "wa_task_id",
+                "booked_at",
+                "error"
+            ],
+            "properties": {
+                "kind": {
+                    "const": "assignment"
+                }
+            }
+        }
+    ]
+}

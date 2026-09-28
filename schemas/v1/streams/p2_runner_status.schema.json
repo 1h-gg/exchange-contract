@@ -1,0 +1,399 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://texstar.app/exchange/v1/streams/p2_runner_status.schema.json",
+    "title": "p2_runner_status (external_refs:p2_runner)",
+    "description": "P2RunnerStatusFeed::pull() lists flattened with kind = report | note | rfa | job; the summary travels in manifest extras.p2_runner_summary. Key: kind|id (external_report_id, pmo_note_id, pmo_operation_id, job_number). Delta.",
+    "type": "object",
+    "required": [
+        "kind"
+    ],
+    "properties": {
+        "kind": {
+            "type": "string",
+            "enum": [
+                "report",
+                "note",
+                "rfa",
+                "job"
+            ]
+        },
+        "external_report_id": {
+            "type": "string"
+        },
+        "job_number": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "pole_identifier": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "variant": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "revision": {
+            "type": [
+                "integer",
+                "null"
+            ]
+        },
+        "status": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "uploaded_at": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "format": "date-time"
+        },
+        "p2_task_record_id": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "p2_content_version_id": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "p2_content_document_id": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "error": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "pmo_note_id": {
+            "type": "integer"
+        },
+        "p2_record_id": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "feed_item_id": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "text": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "poles": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "mentions": {
+            "type": "array"
+        },
+        "mention_name": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "rfa_note": {
+            "type": "boolean"
+        },
+        "task_id": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "posted_at": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "format": "date-time"
+        },
+        "pmo_operation_id": {
+            "type": "integer"
+        },
+        "task_name": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "task_type": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "state": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "parked": {
+            "type": "boolean"
+        },
+        "applied_at": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "format": "date-time"
+        },
+        "ready_for_approval_by": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "ready_for_approval_date": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "rule": {
+            "type": [
+                "object",
+                "array"
+            ]
+        },
+        "p2_job_record_id": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "source": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "priority": {
+            "type": "integer"
+        },
+        "reason": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "rfa_blocked_by": {
+            "type": "array"
+        },
+        "upload_needed": {
+            "type": "array"
+        },
+        "chatter_due": {
+            "type": "boolean"
+        },
+        "rfa_due": {
+            "type": "boolean"
+        },
+        "target_task": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "owner_name": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "dirty": {
+            "type": "boolean"
+        },
+        "last_read_at": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "format": "date-time"
+        },
+        "last_staged_at": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "format": "date-time"
+        },
+        "p2_tasks": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": [
+                    "record_id",
+                    "name",
+                    "type",
+                    "status",
+                    "hold",
+                    "partner"
+                ],
+                "properties": {
+                    "record_id": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "type": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "hold": {
+                        "type": "boolean"
+                    },
+                    "partner": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                }
+            }
+        },
+        "scope": {
+            "$ref": "../common.schema.json#/$defs/scope",
+            "description": "Stamped by the builder from the manifest scope when the emitter did not set it; absent => UNSCOPED."
+        },
+        "origin": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "description": "Phase 1e: set to \"smartsheet\" on sheet-origin rows; absent on app-origin rows."
+        },
+        "origin_ref": {
+            "type": [
+                "object",
+                "null"
+            ],
+            "description": "Phase 1e: {sheet, row, column, modifiedAt}; the receiver applies idempotently by origin_ref and never re-exports."
+        }
+    },
+    "oneOf": [
+        {
+            "type": "object",
+            "required": [
+                "kind",
+                "external_report_id",
+                "job_number",
+                "pole_identifier",
+                "variant",
+                "revision",
+                "status",
+                "uploaded_at",
+                "p2_task_record_id",
+                "p2_content_version_id",
+                "p2_content_document_id",
+                "error"
+            ],
+            "properties": {
+                "kind": {
+                    "const": "report"
+                }
+            }
+        },
+        {
+            "type": "object",
+            "required": [
+                "kind",
+                "pmo_note_id",
+                "job_number",
+                "p2_record_id",
+                "feed_item_id",
+                "text",
+                "poles",
+                "mentions",
+                "mention_name",
+                "rfa_note",
+                "task_id",
+                "posted_at"
+            ],
+            "properties": {
+                "kind": {
+                    "const": "note"
+                }
+            }
+        },
+        {
+            "type": "object",
+            "required": [
+                "kind",
+                "pmo_operation_id",
+                "job_number",
+                "p2_task_record_id",
+                "task_name",
+                "task_type",
+                "state",
+                "parked",
+                "applied_at",
+                "ready_for_approval_by",
+                "ready_for_approval_date",
+                "rule",
+                "error"
+            ],
+            "properties": {
+                "kind": {
+                    "const": "rfa"
+                }
+            }
+        },
+        {
+            "type": "object",
+            "required": [
+                "kind",
+                "job_number",
+                "p2_job_record_id",
+                "source",
+                "priority",
+                "status",
+                "reason",
+                "rfa_blocked_by",
+                "upload_needed",
+                "chatter_due",
+                "rfa_due",
+                "target_task",
+                "owner_name",
+                "dirty",
+                "last_read_at",
+                "last_staged_at",
+                "p2_tasks"
+            ],
+            "properties": {
+                "kind": {
+                    "const": "job"
+                }
+            }
+        }
+    ]
+}

@@ -1,0 +1,136 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://texstar.app/exchange/v1/streams/inspection_reports.schema.json",
+    "title": "inspection_reports (deliverables:report)",
+    "description": "P2ReportOutboxService row (P2ContractPinTest::REPORT_KEYS) with content_base64 forced to null: the PDF travels as files/<sha256> or is fetched via /files/{sha256}. Key: external_report_id. Delta.",
+    "type": "object",
+    "required": [
+        "external_report_id",
+        "job_id",
+        "job_number",
+        "pole_identifier",
+        "variant",
+        "revision",
+        "nesc_inspection_id",
+        "p2_job_record_id",
+        "p2_task_record_id",
+        "p2_task_name",
+        "task_type",
+        "comcast_task_owner",
+        "filename",
+        "inspected_at",
+        "inspector_name",
+        "sha256",
+        "content_base64",
+        "replace"
+    ],
+    "properties": {
+        "external_report_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "job_id": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "job_number": {
+            "$ref": "../common.schema.json#/$defs/jb"
+        },
+        "pole_identifier": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "variant": {
+            "type": "string",
+            "enum": [
+                "nesc",
+                "comcast"
+            ]
+        },
+        "revision": {
+            "type": "integer",
+            "minimum": 1
+        },
+        "nesc_inspection_id": {
+            "type": "integer"
+        },
+        "p2_job_record_id": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "p2_task_record_id": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "p2_task_name": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "task_type": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "comcast_task_owner": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "filename": {
+            "type": "string"
+        },
+        "inspected_at": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "format": "date-time"
+        },
+        "inspector_name": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "sha256": {
+            "$ref": "../common.schema.json#/$defs/sha256"
+        },
+        "content_base64": {
+            "type": "null",
+            "description": "MUST be null in a package; the HTTP bridge embeds the PDF here, the package never does."
+        },
+        "replace": {
+            "type": "boolean"
+        },
+        "scope": {
+            "$ref": "../common.schema.json#/$defs/scope",
+            "description": "Stamped by the builder from the manifest scope when the emitter did not set it; absent => UNSCOPED."
+        },
+        "origin": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "description": "Phase 1e: set to \"smartsheet\" on sheet-origin rows; absent on app-origin rows."
+        },
+        "origin_ref": {
+            "type": [
+                "object",
+                "null"
+            ],
+            "description": "Phase 1e: {sheet, row, column, modifiedAt}; the receiver applies idempotently by origin_ref and never re-exports."
+        }
+    }
+}

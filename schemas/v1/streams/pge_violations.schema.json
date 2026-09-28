@@ -1,0 +1,172 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://texstar.app/exchange/v1/streams/pge_violations.schema.json",
+    "title": "pge_violations",
+    "description": "NescPgeController violation shape wrapped as {ticket, payload}: payload = {ticket, status, state, severity_code, severity, type, equipment[], comment, summary, ju_comment, notify_date, projected_fix_date, construction_complete_date, status_at, related_record, pgenum, pole_description, address, lat, lng, attachers[], last_seen_at}. Store only on NESC. PMO exporter to be written. Mode full. Key: ticket.",
+    "type": "object",
+    "required": [
+        "ticket",
+        "payload"
+    ],
+    "properties": {
+        "ticket": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+        },
+        "payload": {
+            "type": "object",
+            "properties": {
+                "ticket": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "state": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "severity_code": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "severity": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "type": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "equipment": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "comment": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "summary": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "ju_comment": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "notify_date": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "format": "date"
+                },
+                "projected_fix_date": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "format": "date"
+                },
+                "construction_complete_date": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "format": "date"
+                },
+                "status_at": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "format": "date-time"
+                },
+                "related_record": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "pgenum": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "pole_description": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "address": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "lat": {
+                    "type": [
+                        "number",
+                        "null"
+                    ]
+                },
+                "lng": {
+                    "type": [
+                        "number",
+                        "null"
+                    ]
+                },
+                "attachers": {
+                    "type": "array"
+                },
+                "last_seen_at": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "format": "date-time"
+                }
+            }
+        },
+        "scope": {
+            "$ref": "../common.schema.json#/$defs/scope",
+            "description": "Stamped by the builder from the manifest scope when the emitter did not set it; absent => UNSCOPED."
+        },
+        "origin": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "description": "Phase 1e: set to \"smartsheet\" on sheet-origin rows; absent on app-origin rows."
+        },
+        "origin_ref": {
+            "type": [
+                "object",
+                "null"
+            ],
+            "description": "Phase 1e: {sheet, row, column, modifiedAt}; the receiver applies idempotently by origin_ref and never re-exports."
+        }
+    }
+}

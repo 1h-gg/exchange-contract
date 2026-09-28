@@ -1,0 +1,69 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://texstar.app/exchange/v1/streams/gis_sources.schema.json",
+    "title": "gis_sources",
+    "description": "The /gis/pmo/sources tree flattened: one row per source with its layers; icons travel in manifest extras.gis_icons ({key: {label, category, svg}}). Mode full. Key: id.",
+    "type": "object",
+    "required": [
+        "id",
+        "name",
+        "layers"
+    ],
+    "properties": {
+        "id": {
+            "type": [
+                "integer",
+                "string"
+            ]
+        },
+        "name": {
+            "type": "string"
+        },
+        "layers": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": [
+                    "id",
+                    "name",
+                    "role"
+                ],
+                "properties": {
+                    "id": {
+                        "type": [
+                            "integer",
+                            "string"
+                        ]
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "role": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                }
+            }
+        },
+        "scope": {
+            "$ref": "../common.schema.json#/$defs/scope",
+            "description": "Stamped by the builder from the manifest scope when the emitter did not set it; absent => UNSCOPED."
+        },
+        "origin": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "description": "Phase 1e: set to \"smartsheet\" on sheet-origin rows; absent on app-origin rows."
+        },
+        "origin_ref": {
+            "type": [
+                "object",
+                "null"
+            ],
+            "description": "Phase 1e: {sheet, row, column, modifiedAt}; the receiver applies idempotently by origin_ref and never re-exports."
+        }
+    }
+}

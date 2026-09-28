@@ -1,0 +1,33 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://texstar.app/exchange/v1/streams/packets_wanted.schema.json",
+    "title": "packets_wanted",
+    "description": "inspection_packets_wanted flattened: one row per JB whose packets PMO wants. Mode full. Key: job_number.",
+    "type": "object",
+    "required": [
+        "job_number"
+    ],
+    "properties": {
+        "job_number": {
+            "$ref": "../common.schema.json#/$defs/jb"
+        },
+        "scope": {
+            "$ref": "../common.schema.json#/$defs/scope",
+            "description": "Stamped by the builder from the manifest scope when the emitter did not set it; absent => UNSCOPED."
+        },
+        "origin": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "description": "Phase 1e: set to \"smartsheet\" on sheet-origin rows; absent on app-origin rows."
+        },
+        "origin_ref": {
+            "type": [
+                "object",
+                "null"
+            ],
+            "description": "Phase 1e: {sheet, row, column, modifiedAt}; the receiver applies idempotently by origin_ref and never re-exports."
+        }
+    }
+}

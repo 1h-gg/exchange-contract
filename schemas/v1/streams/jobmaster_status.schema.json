@@ -1,0 +1,123 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://texstar.app/exchange/v1/streams/jobmaster_status.schema.json",
+    "title": "jobmaster_status (external_refs:jobmaster)",
+    "description": "JobMasterStatusFeed::pull() jobs[] row. Key: job_number. Delta.",
+    "type": "object",
+    "required": [
+        "job_number",
+        "jobmaster_url",
+        "status_state",
+        "files_state",
+        "notes_state",
+        "nesc_state",
+        "files_total",
+        "files_uploaded",
+        "notes_total",
+        "notes_applied",
+        "nesc_total",
+        "nesc_uploaded",
+        "task_status",
+        "last_error",
+        "completed_at",
+        "updated_at"
+    ],
+    "properties": {
+        "job_number": {
+            "$ref": "../common.schema.json#/$defs/jb"
+        },
+        "jobmaster_url": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "status_state": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "files_state": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "notes_state": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "nesc_state": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "files_total": {
+            "type": "integer"
+        },
+        "files_uploaded": {
+            "type": "integer"
+        },
+        "notes_total": {
+            "type": "integer"
+        },
+        "notes_applied": {
+            "type": "integer"
+        },
+        "nesc_total": {
+            "type": "integer"
+        },
+        "nesc_uploaded": {
+            "type": "integer"
+        },
+        "task_status": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "last_error": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "maxLength": 500
+        },
+        "completed_at": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "format": "date-time"
+        },
+        "updated_at": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "format": "date-time"
+        },
+        "scope": {
+            "$ref": "../common.schema.json#/$defs/scope",
+            "description": "Stamped by the builder from the manifest scope when the emitter did not set it; absent => UNSCOPED."
+        },
+        "origin": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "description": "Phase 1e: set to \"smartsheet\" on sheet-origin rows; absent on app-origin rows."
+        },
+        "origin_ref": {
+            "type": [
+                "object",
+                "null"
+            ],
+            "description": "Phase 1e: {sheet, row, column, modifiedAt}; the receiver applies idempotently by origin_ref and never re-exports."
+        }
+    }
+}

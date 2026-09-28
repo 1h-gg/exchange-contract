@@ -1,0 +1,92 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://texstar.app/exchange/v1/streams/review_decisions.schema.json",
+    "title": "review_decisions",
+    "description": "PmoReviewPushService rows: confirm/reject from the drain, merged (alias merge) from pushMergeDecision with merged_into_record_id. Key: external_decision_id. Delta.",
+    "type": "object",
+    "required": [
+        "external_decision_id",
+        "candidate_key",
+        "decision"
+    ],
+    "properties": {
+        "external_decision_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "candidate_key": {
+            "$ref": "../common.schema.json#/$defs/candidate_key"
+        },
+        "decision": {
+            "type": "string",
+            "enum": [
+                "confirm",
+                "reject",
+                "merged",
+                "merge"
+            ]
+        },
+        "merged_into_record_id": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "description": "Survivor candidate_key on merged rows."
+        },
+        "job_number": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "pole_ref": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "pole_identifier": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "matched_by": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "decided_at": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "format": "date-time"
+        },
+        "decided_by": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "scope": {
+            "$ref": "../common.schema.json#/$defs/scope",
+            "description": "Stamped by the builder from the manifest scope when the emitter did not set it; absent => UNSCOPED."
+        },
+        "origin": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "description": "Phase 1e: set to \"smartsheet\" on sheet-origin rows; absent on app-origin rows."
+        },
+        "origin_ref": {
+            "type": [
+                "object",
+                "null"
+            ],
+            "description": "Phase 1e: {sheet, row, column, modifiedAt}; the receiver applies idempotently by origin_ref and never re-exports."
+        }
+    }
+}

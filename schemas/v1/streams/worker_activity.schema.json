@@ -1,0 +1,142 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://texstar.app/exchange/v1/streams/worker_activity.schema.json",
+    "title": "worker_activity (sow_claims:presence)",
+    "description": "WorkerActivityRunnerSync rows flattened with a kind discriminator: job (wanted/unwanted), assignment, contractor. Key: kind|id (job_number, nesc_assignment_id, id). Delta.",
+    "type": "object",
+    "required": [
+        "kind"
+    ],
+    "properties": {
+        "kind": {
+            "type": "string",
+            "enum": [
+                "job",
+                "assignment",
+                "contractor"
+            ]
+        },
+        "job_number": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "nesc_job_id": {
+            "type": [
+                "integer",
+                "null"
+            ]
+        },
+        "name": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "stage": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "wanted": {
+            "type": "boolean"
+        },
+        "nesc_assignment_id": {
+            "type": "integer"
+        },
+        "contractor_id": {
+            "type": [
+                "integer",
+                "null"
+            ]
+        },
+        "contractor_name": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "first_inspected_at": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "format": "date-time"
+        },
+        "status": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "id": {
+            "type": "integer"
+        },
+        "scope": {
+            "$ref": "../common.schema.json#/$defs/scope",
+            "description": "Stamped by the builder from the manifest scope when the emitter did not set it; absent => UNSCOPED."
+        },
+        "origin": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "description": "Phase 1e: set to \"smartsheet\" on sheet-origin rows; absent on app-origin rows."
+        },
+        "origin_ref": {
+            "type": [
+                "object",
+                "null"
+            ],
+            "description": "Phase 1e: {sheet, row, column, modifiedAt}; the receiver applies idempotently by origin_ref and never re-exports."
+        }
+    },
+    "oneOf": [
+        {
+            "type": "object",
+            "required": [
+                "kind",
+                "job_number",
+                "wanted"
+            ],
+            "properties": {
+                "kind": {
+                    "const": "job"
+                }
+            }
+        },
+        {
+            "type": "object",
+            "required": [
+                "kind",
+                "nesc_assignment_id",
+                "job_number",
+                "nesc_job_id",
+                "contractor_id",
+                "contractor_name",
+                "first_inspected_at",
+                "status"
+            ],
+            "properties": {
+                "kind": {
+                    "const": "assignment"
+                }
+            }
+        },
+        {
+            "type": "object",
+            "required": [
+                "kind",
+                "id",
+                "name"
+            ],
+            "properties": {
+                "kind": {
+                    "const": "contractor"
+                }
+            }
+        }
+    ]
+}

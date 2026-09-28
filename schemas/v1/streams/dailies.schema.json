@@ -1,0 +1,160 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://texstar.app/exchange/v1/streams/dailies.schema.json",
+    "title": "dailies",
+    "description": "The legacy PM dailies_since row NESC consumes (PmoSyncService::syncDailies): daily, jb|job, work_date, market, customer, area, supervisor|spv, foreman_name, crew, state, approved, over48, url, work_items[]. No PMO bridge producer exists yet — PMO exporter to be written. Key: daily. Delta.",
+    "type": "object",
+    "required": [
+        "daily"
+    ],
+    "properties": {
+        "daily": {
+            "type": "string",
+            "minLength": 1
+        },
+        "jb": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "job": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "work_date": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "market": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "customer": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "area": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "supervisor": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "spv": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "foreman_name": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "crew": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "state": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "approved": {
+            "type": [
+                "boolean",
+                "null"
+            ]
+        },
+        "over48": {
+            "type": [
+                "boolean",
+                "null"
+            ]
+        },
+        "url": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "work_items": {
+            "type": [
+                "array",
+                "null"
+            ],
+            "items": {
+                "type": "object",
+                "properties": {
+                    "seq": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "unit_code": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "quantity": {
+                        "type": [
+                            "string",
+                            "number",
+                            "null"
+                        ]
+                    },
+                    "qty_num": {
+                        "type": [
+                            "number",
+                            "null"
+                        ]
+                    },
+                    "description": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                }
+            }
+        },
+        "scope": {
+            "$ref": "../common.schema.json#/$defs/scope",
+            "description": "Stamped by the builder from the manifest scope when the emitter did not set it; absent => UNSCOPED."
+        },
+        "origin": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "description": "Phase 1e: set to \"smartsheet\" on sheet-origin rows; absent on app-origin rows."
+        },
+        "origin_ref": {
+            "type": [
+                "object",
+                "null"
+            ],
+            "description": "Phase 1e: {sheet, row, column, modifiedAt}; the receiver applies idempotently by origin_ref and never re-exports."
+        }
+    }
+}

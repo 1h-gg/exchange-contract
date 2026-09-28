@@ -1,0 +1,108 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://texstar.app/exchange/v1/streams/external_refs.schema.json",
+    "title": "external_refs",
+    "description": "A projection of NESC external_refs rows. entity_key derivation: App\\Models\\Job -> job_number (covers p2 / jobmaster / p2_runner / pmo / sphere refs, worker_activity presence AND the \"assignment:<id>\" booking refs, which MirrorProjector::waBooking writes on the Job); App\\Models\\JobTask -> external_task_id, else synthetic_key, else the row is omitted; Pole (candidate_key) and Inspection (nesc:inspection:<id>:r<rev>) are RESERVED — no projector writes them in 1b and the PMO side must not expect them. entity_id is informational (NESC primary key). Emitted only when the ExternalRefDriftCheck passes. Key: entity_type|entity_key|system|external_id. Delta.",
+    "type": "object",
+    "required": [
+        "entity_type",
+        "entity_key",
+        "system",
+        "external_id"
+    ],
+    "properties": {
+        "entity_type": {
+            "type": "string",
+            "enum": [
+                "App\\Models\\Job",
+                "App\\Models\\JobTask",
+                "App\\Models\\Pole",
+                "App\\Models\\Inspection"
+            ]
+        },
+        "entity_key": {
+            "$ref": "../common.schema.json#/$defs/entity_key"
+        },
+        "entity_id": {
+            "type": "integer",
+            "description": "Informational: the NESC primary key; never a join key across apps."
+        },
+        "system": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 30,
+            "description": "p2 | jobmaster | p2_runner | worker_activity | pmo | sphere | smartsheet."
+        },
+        "external_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+        },
+        "url": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "maxLength": 500
+        },
+        "status": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "maxLength": 40
+        },
+        "status_raw": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "maxLength": 120
+        },
+        "status_at": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "format": "date-time"
+        },
+        "properties": {
+            "type": [
+                "object",
+                "null"
+            ],
+            "description": "The JSON column is `properties` (Phase 1c deviation), not `attributes`."
+        },
+        "source_updated_at": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "format": "date-time"
+        },
+        "program_id": {
+            "type": [
+                "integer",
+                "null"
+            ]
+        },
+        "scope": {
+            "$ref": "../common.schema.json#/$defs/scope",
+            "description": "Stamped by the builder from the manifest scope when the emitter did not set it; absent => UNSCOPED."
+        },
+        "origin": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "description": "Phase 1e: set to \"smartsheet\" on sheet-origin rows; absent on app-origin rows."
+        },
+        "origin_ref": {
+            "type": [
+                "object",
+                "null"
+            ],
+            "description": "Phase 1e: {sheet, row, column, modifiedAt}; the receiver applies idempotently by origin_ref and never re-exports."
+        }
+    }
+}

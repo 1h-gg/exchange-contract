@@ -1,0 +1,95 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://texstar.app/exchange/v1/streams/gis_features.schema.json",
+    "title": "gis_features",
+    "description": "NescGisController lookup candidate shape, one row per feature: {layer_id, layer, kind: pole|job|feature, feature_id, ref, lng, lat, properties (<=20 keys), geometry?}. PMO exporter to be written. Mode full. Key: layer|feature_id.",
+    "type": "object",
+    "required": [
+        "layer",
+        "kind",
+        "feature_id",
+        "lng",
+        "lat",
+        "properties"
+    ],
+    "properties": {
+        "layer_id": {
+            "type": [
+                "integer",
+                "null"
+            ]
+        },
+        "layer": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+        },
+        "kind": {
+            "type": "string",
+            "enum": [
+                "pole",
+                "job",
+                "feature"
+            ]
+        },
+        "feature_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+        },
+        "ref": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "maxLength": 120
+        },
+        "source": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "ref_raw": {
+            "type": [
+                "string",
+                "number",
+                "null"
+            ]
+        },
+        "lng": {
+            "type": "number"
+        },
+        "lat": {
+            "type": "number"
+        },
+        "properties": {
+            "type": "object"
+        },
+        "geometry": {
+            "type": [
+                "object",
+                "null"
+            ],
+            "description": "GeoJSON geometry when the feature is not a point."
+        },
+        "scope": {
+            "$ref": "../common.schema.json#/$defs/scope",
+            "description": "Stamped by the builder from the manifest scope when the emitter did not set it; absent => UNSCOPED."
+        },
+        "origin": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "description": "Phase 1e: set to \"smartsheet\" on sheet-origin rows; absent on app-origin rows."
+        },
+        "origin_ref": {
+            "type": [
+                "object",
+                "null"
+            ],
+            "description": "Phase 1e: {sheet, row, column, modifiedAt}; the receiver applies idempotently by origin_ref and never re-exports."
+        }
+    }
+}

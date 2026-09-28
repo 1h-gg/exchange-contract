@@ -1,0 +1,599 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://texstar.app/exchange/v1/streams/jobs.schema.json",
+    "title": "jobs",
+    "description": "NescSyncFeed::jobPayload() + withBridgeAliases() (pull_jobs row). Only job_number is required; every other key is optional and typed as PMO emits it. Keys NESC reads but PMO never emits (declared optional here for completeness): name, street_address, latitude, longitude, job_type, category, sub_type, division, owner, construction_start, job_close_date, on_hold, redesign, status_stale, eccd_sentinel. Cursor {updated_since, after_id}. Key: job_number. Delta.",
+    "type": "object",
+    "required": [
+        "job_number"
+    ],
+    "properties": {
+        "job_number": {
+            "$ref": "../common.schema.json#/$defs/jb"
+        },
+        "job_id": {
+            "$ref": "../common.schema.json#/$defs/jb"
+        },
+        "jb": {
+            "$ref": "../common.schema.json#/$defs/jb"
+        },
+        "status": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "internal_status": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "gate_state": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "eccd": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "format": "date"
+        },
+        "description": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "site_address": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "city": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "state": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "zip": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "area": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "market": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "region": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "job_owner": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "source_last_seen_at": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "format": "date-time"
+        },
+        "updated_at": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "format": "date-time"
+        },
+        "inspectability": {
+            "type": "object",
+            "required": [
+                "inspectable"
+            ],
+            "properties": {
+                "inspectable": {
+                    "type": "boolean"
+                },
+                "reason": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "active_field_tasks": {
+                    "type": [
+                        "array",
+                        "integer",
+                        "null"
+                    ]
+                },
+                "computed_at": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "format": "date-time"
+                }
+            }
+        },
+        "verdict": {
+            "type": "object",
+            "description": "Bridge alias of inspectability (NESC reads verdict.inspectable / reason / computed_at)."
+        },
+        "nesc_scope": {
+            "type": "boolean",
+            "description": "The job's nesc_flag; NESC gates job creation on it."
+        },
+        "tasks": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": [
+                    "task_id"
+                ],
+                "properties": {
+                    "task_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "task_type": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "status": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "job_status": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "milestone": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "gate_state": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "due_date": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date"
+                    },
+                    "approved_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    }
+                }
+            }
+        },
+        "permits": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "permit_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "permit_number": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "jurisdiction": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "permit_authority": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "type": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "stage": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "expected_submit_date": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date"
+                    },
+                    "submitted_date": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date"
+                    },
+                    "received_date": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date"
+                    },
+                    "expiration_date": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date"
+                    },
+                    "updated_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    }
+                }
+            }
+        },
+        "nesc_poles": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "pole_identifier": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "source_pole_identifier": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "violation_codes": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "latitude": {
+                        "type": [
+                            "number",
+                            "null"
+                        ]
+                    },
+                    "longitude": {
+                        "type": [
+                            "number",
+                            "null"
+                        ]
+                    },
+                    "source": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "confirmed_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    }
+                }
+            }
+        },
+        "nesc_pole_candidates": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": [
+                    "candidate_key"
+                ],
+                "properties": {
+                    "candidate_key": {
+                        "$ref": "../common.schema.json#/$defs/candidate_key"
+                    },
+                    "pole_identifier": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "latitude": {
+                        "type": [
+                            "number",
+                            "null"
+                        ]
+                    },
+                    "longitude": {
+                        "type": [
+                            "number",
+                            "null"
+                        ]
+                    },
+                    "violation_codes": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "violation_count": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "confidence": {
+                        "type": [
+                            "number",
+                            "null"
+                        ]
+                    },
+                    "evidence_count": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "review_state": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "decision_source": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "decided_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    },
+                    "latest_evidence_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    },
+                    "ai": {
+                        "type": [
+                            "object",
+                            "null"
+                        ]
+                    }
+                }
+            }
+        },
+        "poles": {
+            "type": "object",
+            "properties": {
+                "checksum": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "candidates": {
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                },
+                "confirmed": {
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                },
+                "count": {
+                    "type": [
+                        "integer",
+                        "null"
+                    ],
+                    "description": "Bridge alias: confirmed + candidates (reported_pole_count)."
+                }
+            }
+        },
+        "p2_nesc": {
+            "type": [
+                "object",
+                "null"
+            ]
+        },
+        "name": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "street_address": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "latitude": {
+            "type": [
+                "number",
+                "null"
+            ]
+        },
+        "longitude": {
+            "type": [
+                "number",
+                "null"
+            ]
+        },
+        "job_type": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "category": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "sub_type": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "division": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "owner": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "construction_start": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "format": "date"
+        },
+        "job_close_date": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "format": "date"
+        },
+        "on_hold": {
+            "type": [
+                "boolean",
+                "null"
+            ]
+        },
+        "redesign": {
+            "type": [
+                "boolean",
+                "null"
+            ]
+        },
+        "status_stale": {
+            "type": [
+                "boolean",
+                "null"
+            ]
+        },
+        "eccd_sentinel": {
+            "type": [
+                "boolean",
+                "null"
+            ]
+        },
+        "scope": {
+            "$ref": "../common.schema.json#/$defs/scope",
+            "description": "Stamped by the builder from the manifest scope when the emitter did not set it; absent => UNSCOPED."
+        },
+        "origin": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "description": "Phase 1e: set to \"smartsheet\" on sheet-origin rows; absent on app-origin rows."
+        },
+        "origin_ref": {
+            "type": [
+                "object",
+                "null"
+            ],
+            "description": "Phase 1e: {sheet, row, column, modifiedAt}; the receiver applies idempotently by origin_ref and never re-exports."
+        }
+    }
+}

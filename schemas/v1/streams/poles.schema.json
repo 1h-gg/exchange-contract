@@ -1,0 +1,143 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://texstar.app/exchange/v1/streams/poles.schema.json",
+    "title": "poles",
+    "description": "NescPoleSnapshotService candidateRow()/recordRow() (pull_pole_snapshot record). Mode full: files[].set_checksum = sha256(sorted distinct candidate_keys joined \"\\n\") (= the NESC finalize checksum), files[].set_total = row count; the >10% drop guard applies. Key: candidate_key.",
+    "type": "object",
+    "required": [
+        "candidate_key",
+        "job_id",
+        "pole_identifier",
+        "state",
+        "source",
+        "confidence",
+        "violation_codes",
+        "violations",
+        "lat",
+        "lng",
+        "updated_at"
+    ],
+    "properties": {
+        "candidate_key": {
+            "$ref": "../common.schema.json#/$defs/candidate_key"
+        },
+        "job_id": {
+            "$ref": "../common.schema.json#/$defs/jb"
+        },
+        "pole_identifier": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "state": {
+            "type": "string",
+            "minLength": 1
+        },
+        "source": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "confidence": {
+            "type": [
+                "number",
+                "null"
+            ]
+        },
+        "violation_codes": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "violations": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": [
+                    "code"
+                ],
+                "properties": {
+                    "code": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "measurement": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "location": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "ticket_number": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "due_date": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "pole_owner": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                }
+            }
+        },
+        "lat": {
+            "type": [
+                "number",
+                "null"
+            ]
+        },
+        "lng": {
+            "type": [
+                "number",
+                "null"
+            ]
+        },
+        "updated_at": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "format": "date-time"
+        },
+        "scope": {
+            "$ref": "../common.schema.json#/$defs/scope",
+            "description": "Stamped by the builder from the manifest scope when the emitter did not set it; absent => UNSCOPED."
+        },
+        "origin": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "description": "Phase 1e: set to \"smartsheet\" on sheet-origin rows; absent on app-origin rows."
+        },
+        "origin_ref": {
+            "type": [
+                "object",
+                "null"
+            ],
+            "description": "Phase 1e: {sheet, row, column, modifiedAt}; the receiver applies idempotently by origin_ref and never re-exports."
+        }
+    }
+}

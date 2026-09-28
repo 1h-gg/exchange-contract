@@ -1,0 +1,35 @@
+{
+    "name": "texstar/exchange-contract",
+    "description": "Texstar Exchange v1: the PMO <-> NESC package contract (schemas, DTOs, validator, signing, package builder/reader).",
+    "type": "library",
+    "license": "proprietary",
+    "require": {
+        "php": "^8.3",
+        "ext-json": "*",
+        "ext-zip": "*",
+        "ext-fileinfo": "*"
+    },
+    "suggest": {
+        "ext-curl": "Needed by the reference runner client and CLI"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "Texstar\\Exchange\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Texstar\\Exchange\\Tests\\": "tests/"
+        }
+    },
+    "bin": ["bin/exchange"],
+    "config": {
+        "sort-packages": true,
+        "optimize-autoloader": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

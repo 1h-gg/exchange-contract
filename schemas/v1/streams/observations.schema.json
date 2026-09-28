@@ -1,0 +1,70 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://texstar.app/exchange/v1/streams/observations.schema.json",
+    "title": "observations",
+    "description": "Legacy obs item {jb, entity, entity_id, field, value, observed_at, note} from PmoSyncService::pushObservations, plus external_id = \"nesc:obs:{jb}:{field}:{sha8(value)}\". Key: external_id. Delta.",
+    "type": "object",
+    "required": [
+        "external_id",
+        "jb",
+        "entity",
+        "entity_id",
+        "field",
+        "value",
+        "observed_at"
+    ],
+    "properties": {
+        "external_id": {
+            "type": "string",
+            "pattern": "^nesc:obs:JB\\d{6,}:[a-z0-9_]+:[a-f0-9]{8}$"
+        },
+        "jb": {
+            "$ref": "../common.schema.json#/$defs/jb"
+        },
+        "entity": {
+            "type": "string",
+            "enum": [
+                "job",
+                "pole",
+                "task"
+            ]
+        },
+        "entity_id": {
+            "type": "string"
+        },
+        "field": {
+            "type": "string",
+            "minLength": 1
+        },
+        "value": {
+            "type": "string"
+        },
+        "observed_at": {
+            "$ref": "../common.schema.json#/$defs/iso_datetime"
+        },
+        "note": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "scope": {
+            "$ref": "../common.schema.json#/$defs/scope",
+            "description": "Stamped by the builder from the manifest scope when the emitter did not set it; absent => UNSCOPED."
+        },
+        "origin": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "description": "Phase 1e: set to \"smartsheet\" on sheet-origin rows; absent on app-origin rows."
+        },
+        "origin_ref": {
+            "type": [
+                "object",
+                "null"
+            ],
+            "description": "Phase 1e: {sheet, row, column, modifiedAt}; the receiver applies idempotently by origin_ref and never re-exports."
+        }
+    }
+}

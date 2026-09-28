@@ -1,0 +1,79 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://texstar.app/exchange/v1/common.schema.json",
+    "title": "Texstar Exchange v1 shared definitions",
+    "description": "Referenced by every other schema as common.schema.json#/$defs/<name>. Timestamps: latest_event_at is a SQL datetime (Y-m-d H:i:s); every other timestamp is ISO-8601. Strict validators: the date-time format here accepts both.",
+    "$defs": {
+        "jb": {
+            "type": "string",
+            "pattern": "^JB\\d{6,}$",
+            "description": "Comcast job number (canonical_job_id)."
+        },
+        "tsk": {
+            "type": "string",
+            "pattern": "^TSK\\d+$",
+            "description": "P2 task name (external_task_id)."
+        },
+        "candidate_key": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "description": "sha256(UPPER(JB)|UPPER(pole_identifier))."
+        },
+        "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+        },
+        "uuid": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+            "description": "UUID v4, lower case."
+        },
+        "iso_datetime": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:?\\d{2})$"
+        },
+        "sql_datetime": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$",
+            "description": "Y-m-d H:i:s (latest_event_at only)."
+        },
+        "direction": {
+            "type": "string",
+            "enum": [
+                "nesc_to_pmo",
+                "pmo_to_nesc"
+            ],
+            "description": "ASCII wire values; the plan's arrow is prose."
+        },
+        "kind": {
+            "type": "string",
+            "enum": [
+                "package",
+                "rows"
+            ],
+            "description": "package = signed zip; rows = unsigned API mini-package, never accepted through the inbound upload."
+        },
+        "mode": {
+            "type": "string",
+            "enum": [
+                "delta",
+                "full"
+            ]
+        },
+        "scope": {
+            "$ref": "scope.schema.json"
+        },
+        "entity_key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255,
+            "description": "The row-level key of an entity: Job -> job_number; JobTask -> external_task_id else synthetic_key; Pole (candidate_key) and Inspection (nesc:inspection:<id>:r<rev>) are RESERVED in 1.x."
+        },
+        "row_key_parts": {
+            "type": "string",
+            "description": "RowKey: composite fields joined with \"|\", or \"<kind>|<id>\" for kind-discriminated streams."
+        }
+    }
+}

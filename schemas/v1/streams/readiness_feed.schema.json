@@ -1,0 +1,88 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://texstar.app/exchange/v1/streams/readiness_feed.schema.json",
+    "title": "readiness_feed",
+    "description": "One row per package: P2ReadinessService::feedSummary(). Key: the constant \"feed\". Full.",
+    "type": "object",
+    "required": [
+        "jobs_tracked",
+        "jobs_pushed",
+        "jobs_waiting_live",
+        "jobs_waiting_backlog",
+        "jobs_errored",
+        "pdfs_pending",
+        "pdfs_rendered",
+        "pdfs_pushed",
+        "pdfs_failed",
+        "pdfs_pending_backlog",
+        "pdfs_pending_jobs",
+        "last_pushed_at",
+        "backlog_window",
+        "generated_at"
+    ],
+    "properties": {
+        "jobs_tracked": {
+            "type": "integer"
+        },
+        "jobs_pushed": {
+            "type": "integer"
+        },
+        "jobs_waiting_live": {
+            "type": "integer"
+        },
+        "jobs_waiting_backlog": {
+            "type": "integer"
+        },
+        "jobs_errored": {
+            "type": "integer"
+        },
+        "pdfs_pending": {
+            "type": "integer"
+        },
+        "pdfs_rendered": {
+            "type": "integer"
+        },
+        "pdfs_pushed": {
+            "type": "integer"
+        },
+        "pdfs_failed": {
+            "type": "integer"
+        },
+        "pdfs_pending_backlog": {
+            "type": "integer"
+        },
+        "pdfs_pending_jobs": {
+            "type": "integer"
+        },
+        "last_pushed_at": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "backlog_window": {
+            "type": "string"
+        },
+        "generated_at": {
+            "$ref": "../common.schema.json#/$defs/iso_datetime"
+        },
+        "scope": {
+            "$ref": "../common.schema.json#/$defs/scope",
+            "description": "Stamped by the builder from the manifest scope when the emitter did not set it; absent => UNSCOPED."
+        },
+        "origin": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "description": "Phase 1e: set to \"smartsheet\" on sheet-origin rows; absent on app-origin rows."
+        },
+        "origin_ref": {
+            "type": [
+                "object",
+                "null"
+            ],
+            "description": "Phase 1e: {sheet, row, column, modifiedAt}; the receiver applies idempotently by origin_ref and never re-exports."
+        }
+    }
+}

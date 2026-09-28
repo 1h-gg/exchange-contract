@@ -1,0 +1,424 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://texstar.app/exchange/v1/streams/readiness.schema.json",
+    "title": "readiness (deliverables:readiness)",
+    "description": "P2ReadinessService::payload() — the push_p2_job_states row in P2ContractPinTest::PAYLOAD_KEYS order, plus backlog. Key: job_number. Delta.",
+    "type": "object",
+    "required": [
+        "job_number",
+        "p2_job_record_id",
+        "stage",
+        "expected_poles",
+        "all_poles_supervisor_approved",
+        "approved_pole_count",
+        "estimating_approved_at",
+        "completed_at",
+        "returned_to_field_at",
+        "tasks",
+        "has_active_runner_task",
+        "held",
+        "hold_reason",
+        "excluded_poles",
+        "sphere_sow_built_at",
+        "permits_needed",
+        "permits_determined_at",
+        "permits_task_submitted_at",
+        "permit_types",
+        "info_requests",
+        "inspections",
+        "sow_claims",
+        "latest_event_at",
+        "backlog"
+    ],
+    "properties": {
+        "job_number": {
+            "$ref": "../common.schema.json#/$defs/jb"
+        },
+        "p2_job_record_id": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "stage": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "expected_poles": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "all_poles_supervisor_approved": {
+            "type": "boolean"
+        },
+        "approved_pole_count": {
+            "type": "integer",
+            "minimum": 0
+        },
+        "estimating_approved_at": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "format": "date-time"
+        },
+        "completed_at": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "format": "date-time"
+        },
+        "returned_to_field_at": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "format": "date-time"
+        },
+        "tasks": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": [
+                    "p2_task_name",
+                    "p2_task_record_id",
+                    "task_type",
+                    "status_base",
+                    "raw_status",
+                    "comcast_task_owner"
+                ],
+                "properties": {
+                    "p2_task_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "p2_task_record_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "task_type": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "status_base": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "raw_status": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "comcast_task_owner": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "system": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Package rows only (not the HTTP payload): the external system holding the task (p2 today, sphere later)."
+                    },
+                    "external_task_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Package rows only: the neutral task identity; null for synthetic-key tasks."
+                    }
+                }
+            }
+        },
+        "has_active_runner_task": {
+            "type": "boolean"
+        },
+        "held": {
+            "type": "boolean"
+        },
+        "hold_reason": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "excluded_poles": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": [
+                    "pole",
+                    "reason"
+                ],
+                "properties": {
+                    "pole": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "reason": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                }
+            }
+        },
+        "sphere_sow_built_at": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "format": "date-time"
+        },
+        "permits_needed": {
+            "type": "boolean"
+        },
+        "permits_determined_at": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "format": "date-time"
+        },
+        "permits_task_submitted_at": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "format": "date-time"
+        },
+        "permit_types": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "info_requests": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": [
+                    "pole",
+                    "question",
+                    "asked_at"
+                ],
+                "properties": {
+                    "pole": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "question": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "asked_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    }
+                }
+            }
+        },
+        "inspections": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": [
+                    "nesc_inspection_id",
+                    "pole",
+                    "status",
+                    "revision",
+                    "captured_at",
+                    "reviewed_at",
+                    "work_performed",
+                    "further_work_needed",
+                    "is_compliant",
+                    "outcome",
+                    "notes"
+                ],
+                "properties": {
+                    "nesc_inspection_id": {
+                        "type": "integer"
+                    },
+                    "pole": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "status": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "revision": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "captured_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    },
+                    "reviewed_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    },
+                    "work_performed": {
+                        "type": [
+                            "boolean",
+                            "null"
+                        ]
+                    },
+                    "further_work_needed": {
+                        "type": [
+                            "boolean",
+                            "null"
+                        ]
+                    },
+                    "is_compliant": {
+                        "type": [
+                            "boolean",
+                            "null"
+                        ]
+                    },
+                    "outcome": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "notes": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 1000
+                    }
+                }
+            }
+        },
+        "sow_claims": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": [
+                    "id",
+                    "nesc_inspection_id",
+                    "pole",
+                    "code",
+                    "unit",
+                    "claim_type",
+                    "quantity",
+                    "notes"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "nesc_inspection_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "pole": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "code": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "unit": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "claim_type": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "quantity": {
+                        "type": "number"
+                    },
+                    "notes": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 500
+                    }
+                }
+            }
+        },
+        "latest_event_at": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "pattern": "^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$",
+            "description": "SQL datetime (Y-m-d H:i:s), the one non-ISO timestamp on the wire."
+        },
+        "backlog": {
+            "type": "boolean",
+            "description": "Package rows only: the push was queued in the backlog window."
+        },
+        "scope": {
+            "$ref": "../common.schema.json#/$defs/scope",
+            "description": "Stamped by the builder from the manifest scope when the emitter did not set it; absent => UNSCOPED."
+        },
+        "origin": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "description": "Phase 1e: set to \"smartsheet\" on sheet-origin rows; absent on app-origin rows."
+        },
+        "origin_ref": {
+            "type": [
+                "object",
+                "null"
+            ],
+            "description": "Phase 1e: {sheet, row, column, modifiedAt}; the receiver applies idempotently by origin_ref and never re-exports."
+        }
+    }
+}

@@ -1,0 +1,31 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://texstar.app/exchange/v1/scope.schema.json",
+    "title": "Scope",
+    "description": "Phase 1f {tenant, contract, program, instance}. Every key is optional: a missing or blank key resolves to UNSCOPED = {texstar, comcast, comcast-nesc, null}. The HMAC key id is \"<tenant>:<contract>\".",
+    "type": "object",
+    "properties": {
+        "tenant": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+        },
+        "contract": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+        },
+        "program": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+        },
+        "instance": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "maxLength": 60
+        }
+    }
+}

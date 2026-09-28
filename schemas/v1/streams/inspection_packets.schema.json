@@ -1,0 +1,256 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://texstar.app/exchange/v1/streams/inspection_packets.schema.json",
+    "title": "inspection_packets (deliverables:packet)",
+    "description": "InspectionPacketOutboxService::packet() (P2ContractPinTest::PACKET_KEYS). photos[].sha256 is nullable; file_url is kept; photo bytes travel as blobs or via /files/{sha256}. Key: external_id. Delta.",
+    "type": "object",
+    "required": [
+        "external_id",
+        "nesc_inspection_id",
+        "revision",
+        "job_number",
+        "pole_identifier",
+        "status",
+        "outcome",
+        "is_compliant",
+        "inspector_name",
+        "captured_at",
+        "reviewed_at",
+        "notes",
+        "work_performed",
+        "further_work_needed",
+        "blocked_reason",
+        "review_notes",
+        "reviews",
+        "photos",
+        "deleted"
+    ],
+    "properties": {
+        "external_id": {
+            "type": "string",
+            "pattern": "^nesc:inspection:\\d+:r\\d+$"
+        },
+        "nesc_inspection_id": {
+            "type": "integer"
+        },
+        "revision": {
+            "type": "integer",
+            "minimum": 1
+        },
+        "job_number": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "pole_identifier": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "status": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "maxLength": 40
+        },
+        "outcome": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "maxLength": 60
+        },
+        "is_compliant": {
+            "type": [
+                "boolean",
+                "null"
+            ]
+        },
+        "inspector_name": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "maxLength": 120
+        },
+        "captured_at": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "format": "date-time"
+        },
+        "reviewed_at": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "format": "date-time"
+        },
+        "notes": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "maxLength": 4000
+        },
+        "work_performed": {
+            "type": [
+                "boolean",
+                "null"
+            ]
+        },
+        "further_work_needed": {
+            "type": [
+                "boolean",
+                "null"
+            ]
+        },
+        "blocked_reason": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "maxLength": 4000
+        },
+        "review_notes": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "maxLength": 4000
+        },
+        "reviews": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": [
+                    "revision",
+                    "decision",
+                    "gate",
+                    "notes",
+                    "reviewer_name",
+                    "reviewed_at"
+                ],
+                "properties": {
+                    "revision": {
+                        "type": "integer"
+                    },
+                    "decision": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 24
+                    },
+                    "gate": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 24
+                    },
+                    "notes": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 4000
+                    },
+                    "reviewer_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 120
+                    },
+                    "reviewed_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    }
+                }
+            }
+        },
+        "photos": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": [
+                    "external_id",
+                    "revision",
+                    "category",
+                    "original_filename",
+                    "size",
+                    "sha256",
+                    "file_url"
+                ],
+                "properties": {
+                    "external_id": {
+                        "type": "string",
+                        "pattern": "^nesc:photo:\\d+$"
+                    },
+                    "revision": {
+                        "type": "integer"
+                    },
+                    "category": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 60
+                    },
+                    "original_filename": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 255
+                    },
+                    "size": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "sha256": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "file_url": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "deleted": {
+            "type": "boolean"
+        },
+        "scope": {
+            "$ref": "../common.schema.json#/$defs/scope",
+            "description": "Stamped by the builder from the manifest scope when the emitter did not set it; absent => UNSCOPED."
+        },
+        "origin": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "description": "Phase 1e: set to \"smartsheet\" on sheet-origin rows; absent on app-origin rows."
+        },
+        "origin_ref": {
+            "type": [
+                "object",
+                "null"
+            ],
+            "description": "Phase 1e: {sheet, row, column, modifiedAt}; the receiver applies idempotently by origin_ref and never re-exports."
+        }
+    }
+}

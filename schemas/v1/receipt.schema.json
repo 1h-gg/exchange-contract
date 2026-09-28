@@ -1,0 +1,157 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://texstar.app/exchange/v1/receipt.schema.json",
+    "title": "Receipt",
+    "description": "One importer answer per verified package. rejected_rows are keyed by RowKey + seq (0-based line in the stream file), never by batch index. receipt.json inside a package wraps a list of these: {format: texstar-exchange-receipt, version: 1, receipts: [...]}.",
+    "type": "object",
+    "required": [
+        "format",
+        "version",
+        "package_id",
+        "receipt_id",
+        "produced_at",
+        "producer",
+        "scope",
+        "streams",
+        "status"
+    ],
+    "properties": {
+        "format": {
+            "const": "texstar-exchange-receipt"
+        },
+        "version": {
+            "type": "integer",
+            "minimum": 1
+        },
+        "package_id": {
+            "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "receipt_id": {
+            "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "produced_at": {
+            "$ref": "common.schema.json#/$defs/iso_datetime"
+        },
+        "producer": {
+            "type": "object",
+            "required": [
+                "app"
+            ],
+            "properties": {
+                "app": {
+                    "type": "string",
+                    "enum": [
+                        "nesc",
+                        "pmo"
+                    ]
+                },
+                "version": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "instance": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "contract": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            }
+        },
+        "scope": {
+            "$ref": "common.schema.json#/$defs/scope"
+        },
+        "streams": {
+            "type": "object",
+            "description": "{<stream>: stream_receipt} — see $defs/stream_receipt."
+        },
+        "status": {
+            "type": "string",
+            "enum": [
+                "applied",
+                "rejected",
+                "partial"
+            ]
+        },
+        "message": {
+            "type": [
+                "string",
+                "null"
+            ]
+        }
+    },
+    "$defs": {
+        "stream_receipt": {
+            "type": "object",
+            "required": [
+                "received",
+                "accepted",
+                "rejected",
+                "accepted_all",
+                "rejected_rows"
+            ],
+            "properties": {
+                "received": {
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "accepted": {
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "rejected": {
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "accepted_all": {
+                    "type": "boolean"
+                },
+                "rejected_rows": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "required": [
+                            "key",
+                            "seq",
+                            "code",
+                            "message"
+                        ],
+                        "properties": {
+                            "key": {
+                                "type": "string"
+                            },
+                            "seq": {
+                                "type": "integer",
+                                "minimum": 0
+                            },
+                            "code": {
+                                "type": "string",
+                                "minLength": 1
+                            },
+                            "message": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "cursor_to": {
+                    "description": "Opaque; echoed to the producer."
+                },
+                "applied_at": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "format": "date-time"
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,267 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://texstar.app/exchange/v1/manifest.schema.json",
+    "title": "Manifest",
+    "description": "manifest.json of a *.txx.zip. Signature: HMAC-SHA256 hex over the strict canonical JSON of the manifest without `signature`; null only when kind = rows. Zip layout is closed: manifest.json, streams/<stream>.ndjson, files/<sha256>, receipt.json.",
+    "type": "object",
+    "required": [
+        "format",
+        "version",
+        "contract",
+        "package_id",
+        "direction",
+        "created_at",
+        "producer",
+        "files",
+        "blobs",
+        "receipts",
+        "signature"
+    ],
+    "properties": {
+        "format": {
+            "const": "texstar-exchange"
+        },
+        "version": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "A reader accepts version == its own MAJOR only."
+        },
+        "contract": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$",
+            "description": "Informational semver of the writing package."
+        },
+        "kind": {
+            "$ref": "common.schema.json#/$defs/kind",
+            "default": "package"
+        },
+        "package_id": {
+            "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "direction": {
+            "$ref": "common.schema.json#/$defs/direction"
+        },
+        "created_at": {
+            "$ref": "common.schema.json#/$defs/iso_datetime"
+        },
+        "producer": {
+            "type": "object",
+            "required": [
+                "app"
+            ],
+            "properties": {
+                "app": {
+                    "type": "string",
+                    "enum": [
+                        "nesc",
+                        "pmo"
+                    ]
+                },
+                "version": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "instance": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "contract": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "The contract version the producer was built against."
+                }
+            }
+        },
+        "scope": {
+            "$ref": "common.schema.json#/$defs/scope",
+            "description": "OPTIONAL; absent => UNSCOPED. Receipts echo it."
+        },
+        "cursors": {
+            "type": "object",
+            "description": "{<stream>: {from, to}} opaque; PMO cursors travel verbatim; NESC->PMO streams use {from: last receipted package_id, to: this package_id}."
+        },
+        "files": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": [
+                    "path",
+                    "stream",
+                    "schema",
+                    "rows",
+                    "sha256",
+                    "mode"
+                ],
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "pattern": "^streams/[a-z0-9_]{1,40}\\.ndjson$"
+                    },
+                    "stream": {
+                        "type": "string",
+                        "pattern": "^[a-z0-9_]{1,40}$"
+                    },
+                    "schema": {
+                        "type": "string",
+                        "pattern": "^[a-z0-9_]{1,40}@\\d{1,3}$",
+                        "description": "\"<stream>@<major>\"; an unknown stream or a higher major is skipped with a warning."
+                    },
+                    "rows": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "sha256": {
+                        "$ref": "common.schema.json#/$defs/sha256"
+                    },
+                    "bytes": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "minimum": 0,
+                        "description": "Uncompressed byte count of the NDJSON file (written by the builder; tightens the inflate guard)."
+                    },
+                    "mode": {
+                        "$ref": "common.schema.json#/$defs/mode"
+                    },
+                    "set_checksum": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "mode=full only: e.g. poles = sha256(sorted distinct candidate_keys joined \"\\n\")."
+                    },
+                    "set_total": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "minimum": 0
+                    }
+                }
+            }
+        },
+        "blobs": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": [
+                    "sha256",
+                    "bytes",
+                    "mime",
+                    "path"
+                ],
+                "properties": {
+                    "sha256": {
+                        "$ref": "common.schema.json#/$defs/sha256"
+                    },
+                    "bytes": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "mime": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 120
+                    },
+                    "path": {
+                        "type": "string",
+                        "pattern": "^files/[a-f0-9]{64}$"
+                    }
+                }
+            },
+            "description": "Only blobs physically included; rows may reference shas fetched via /files/{sha256}."
+        },
+        "receipts": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": [
+                    "package_id",
+                    "path"
+                ],
+                "properties": {
+                    "package_id": {
+                        "$ref": "common.schema.json#/$defs/uuid"
+                    },
+                    "path": {
+                        "const": "receipt.json"
+                    }
+                }
+            }
+        },
+        "extras": {
+            "type": "object",
+            "properties": {
+                "readiness_feed": {
+                    "type": [
+                        "object",
+                        "null"
+                    ]
+                },
+                "p2_runner_summary": {
+                    "type": [
+                        "object",
+                        "null"
+                    ]
+                },
+                "worker_activity_summary": {
+                    "type": [
+                        "object",
+                        "null"
+                    ]
+                },
+                "gis_icons": {
+                    "type": [
+                        "object",
+                        "null"
+                    ]
+                },
+                "external_refs_skipped": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "Set when the drift check failed and the external_refs stream was left out."
+                }
+            }
+        },
+        "signature": {
+            "oneOf": [
+                {
+                    "type": "null",
+                    "description": "kind = rows only."
+                },
+                {
+                    "type": "object",
+                    "required": [
+                        "alg",
+                        "key_id",
+                        "value"
+                    ],
+                    "properties": {
+                        "alg": {
+                            "const": "HMAC-SHA256"
+                        },
+                        "key_id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 120,
+                            "description": "\"<tenant>:<contract>\", e.g. texstar:comcast."
+                        },
+                        "value": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                        }
+                    }
+                }
+            ]
+        }
+    }
+}
