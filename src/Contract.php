@@ -16,7 +16,7 @@ final class Contract
 
     public const RECEIPT_FORMAT = 'texstar-exchange-receipt';
 
-    public const VERSION = '1.0.0';
+    public const VERSION = '1.1.0';
 
     public const MAJOR = 1;
 

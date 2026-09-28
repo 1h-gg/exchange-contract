@@ -239,6 +239,16 @@
                         "null"
                     ],
                     "description": "Set when the drift check failed and the external_refs stream was left out."
+                },
+                "full_streams_unchanged": {
+                    "type": [
+                        "array",
+                        "null"
+                    ],
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "Full streams the producer left out because they are unchanged since the last receipted set. Absence of a full stream never means an empty set."
                 }
             }
         },

@@ -12,7 +12,7 @@
                 "app": "pmo",
                 "version": "2026.09.27",
                 "instance": "pmo",
-                "contract": "1.0.0"
+                "contract": "1.1.0"
             },
             "scope": {
                 "tenant": "texstar",
@@ -22,6 +22,15 @@
             },
             "streams": {
                 "readiness": {
+                    "received": 1,
+                    "accepted": 1,
+                    "rejected": 0,
+                    "accepted_all": true,
+                    "rejected_rows": [],
+                    "cursor_to": "4c5d6e7f-8a9b-4c0d-8e1f-2a3b4c5d6e7f",
+                    "applied_at": "2026-09-01T12:00:00+00:00"
+                },
+                "readiness_feed": {
                     "received": 1,
                     "accepted": 1,
                     "rejected": 0,

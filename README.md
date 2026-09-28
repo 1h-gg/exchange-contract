@@ -9,8 +9,9 @@ the same code, the same JSON Schemas and the same fixtures.
 Phase 1b ships this package and the NESC side (nescdev, branch `dycom-platform`). **The PMO side is
 still to build.** It runs on pmotest against the same package, the same fixtures and the same OpenAPI
 document. The [PMO implementation checklist](#pmo-implementation-checklist) at the end lists everything
-it must do, and [Open contract items](#open-contract-items) lists what is still to settle between the
-two sides. NESC-side operations (keys, transport switch, first exchange by hand, caps, prune, rollback)
+it must do, [PMO deviations](#pmo-deviations) lists where PMO knowingly differs, and
+[Owner questions](#owner-questions) lists what is still for the owner to decide. The
+[Changelog](#changelog) lists what each contract minor added. NESC-side operations (keys, transport switch, first exchange by hand, caps, prune, rollback)
 are in the NESC repo: `docs/HANDOVER-INVENTORY.md` §8c and `docs/04-integrations.md` "PMO ⇄ NESC exchange".
 
 ## Layout
@@ -52,7 +53,7 @@ from validated fields only.
 ### Manifest
 
 ```
-format: "texstar-exchange"          version: 1 (reader accepts == its MAJOR)      contract: "1.0.0"
+format: "texstar-exchange"          version: 1 (reader accepts == its MAJOR)      contract: "1.1.0"
 kind: "package" | "rows"            package_id: uuid v4                            direction: nesc_to_pmo | pmo_to_nesc
 created_at: ISO-8601                producer: {app: nesc|pmo, version, instance, contract}
 scope: {tenant, contract, program, instance|null}   OPTIONAL — absent => Scope::UNSCOPED (texstar/comcast/comcast-nesc)
@@ -60,7 +61,7 @@ cursors: {<stream>: {from, to}}     opaque
 files:  [{path, stream, schema: "<stream>@1", rows, sha256, bytes, mode: delta|full, set_checksum?, set_total?}]
 blobs:  [{sha256, bytes, mime, path: "files/<sha256>"}]
 receipts: [{package_id, path: "receipt.json", sha256, bytes}]   every entry: the same hash + length of receipt.json
-extras: {readiness_feed?, p2_runner_summary?, worker_activity_summary?, gis_icons?, external_refs_skipped?}
+extras: {readiness_feed?, p2_runner_summary?, worker_activity_summary?, gis_icons?, external_refs_skipped?, full_streams_unchanged?}
 signature: {alg: "HMAC-SHA256", key_id: "<tenant>:<contract>", value: hex} | null   (null only when kind = rows)
 ```
 
@@ -68,6 +69,11 @@ Directions are the ASCII strings `nesc_to_pmo` / `pmo_to_nesc`; the plan's arrow
 manifest — `extras` included — is signed as **strict** canonical JSON, so it must not contain floats:
 render rates and averages as strings or integers (the fixture `p2_runner_summary` does). Rows may
 carry floats freely.
+
+`producer.version` is informational and free-form (PMO stamps `dev` or its release, NESC
+`config('version.current')`); consumers never gate on it. `producer.contract` carries the writer's
+`Contract::VERSION`. `extras.full_streams_unchanged` (1.1.0) is a list of stream names; see
+[Full streams](#full-streams-absence-means-unchanged).
 
 ### Streams
 
@@ -79,21 +85,21 @@ that lack it). `origin` / `origin_ref` are optional on every row (Phase 1e sheet
 |---|---|---|---|---|---|---|
 | readiness | deliverables:readiness | nesc→pmo | delta | job_number | `push_p2_job_states` row in `P2ContractPinTest::PAYLOAD_KEYS` order + `backlog`; `tasks[]` also carry `system`, `external_task_id` (package rows only — the HTTP payload does not) | — (importer: `push_p2_job_states`) |
 | readiness_feed | — | nesc→pmo | full | `feed` | one row: `P2ReadinessService::feedSummary()`; also in `extras.readiness_feed` | — |
-| inspection_reports | deliverables:report | nesc→pmo | delta | external_report_id | `REPORT_KEYS`; `content_base64` MUST be null; PDF under `files/<sha256>` or via `GET /files/{sha256}` | — (importer resolves `files/{sha}`) |
-| inspection_packets | deliverables:packet | nesc→pmo | delta | external_id | `InspectionPacketOutboxService::packet()`; `photos[].sha256` nullable, `file_url` kept | — |
-| review_decisions | — | nesc→pmo | delta | external_decision_id | `decision` ∈ confirm, reject, merged, merge | — (importer accepts the `merged` alias) |
-| observations | — | nesc→pmo | delta | external_id | legacy obs item `{jb, entity, entity_id, field, value, observed_at, note}` + `external_id` `nesc:obs:{jb}:{field}:{sha8(value)}` | — |
+| inspection_reports | deliverables:report | nesc→pmo | delta | external_report_id | `REPORT_KEYS`; `content_base64` MUST be null; `file_url` / `download_url` / `url` are typed `null` (1.1.0): consumers MUST ignore URL fields and resolve the PDF from `files/<sha256>` or `PUT`/`GET /files/{sha256}` only — a missing blob is the row reject `blob_missing`; consumers key storage on `job_number` (`job_id` is informational) | — (importer resolves `files/{sha}`) |
+| inspection_packets | deliverables:packet | nesc→pmo | delta | external_id | `InspectionPacketOutboxService::packet()`; `photos[].sha256` nullable, `file_url` kept (built from the producer's `app.url`); consumers fetch `photos[].file_url` only over https from an allowlisted producer host — see [Consumer rules](#consumer-rules-both-importers) 6 | — |
+| review_decisions | — | nesc→pmo | delta | external_decision_id | `decision` ∈ confirm, reject, merged, merge; `merged` is accepted as an alias of `merge` in the package path; a `merge`/`merged` row whose `candidate_key` PMO has never seen (neither a P2 candidate nor a durable record) is rejected `unknown_candidate`; `confirm`/`reject` of an unknown `candidate_key` are applied exactly as the HTTP ingest does (a record is minted) | — (importer accepts the `merged` alias) |
+| observations | — | nesc→pmo | delta | external_id | legacy obs item `{jb, entity, entity_id, field, value, observed_at, note}` + `external_id` `nesc:obs:{jb}:{field}:{sha8(value)}`, ≤ 64 chars (`maxLength` 1.1.0; NESC's longest is ~52); PMO's exchange importer translates it to its `push_observations` ingest | — |
 | worker_activity | sow_claims:presence | nesc→pmo | delta | kind\|id | `{kind: job\|assignment\|contractor, …WorkerActivityRunnerSync row}` | — |
 | external_refs | external_refs | nesc→pmo | delta | entity_type\|entity_key\|system\|external_id | see below; emitted only when NESC's drift check passes (`extras.external_refs_skipped` otherwise) | — |
-| jobs | jobs | pmo→nesc | delta | job_number | `NescSyncFeed::jobPayload()` + `withBridgeAliases` (`job_number`, `verdict`, `nesc_scope`, `poles.count`); only `job_number` required; cursor `{updated_since, after_id}` | exporter over `NescSyncFeed::pullPage` |
-| poles | poles (+violations nested) | pmo→nesc | full | candidate_key | `NescPoleSnapshotService` candidateRow/recordRow (+ `ai_verdict`, `ai_rationale`, `ai`), record wins; rows in candidate_key order; `set_checksum` = sha256(sorted distinct candidate_keys joined `"\n"`) = `keysChecksum()`, `set_total` | exporter over `snapshotPage` |
+| jobs | jobs | pmo→nesc | delta | job_number | `NescSyncFeed::jobPayload()` + `withBridgeAliases` (`job_number`, `verdict`, `nesc_scope`, `poles.count`); only `job_number` required; `nesc_pole_candidates[].confidence` is `number\|string\|null` (1.1.0, the P2 label); cursor `{updated_since, after_id}` | exporter over `NescSyncFeed::pullPage` |
+| poles | poles (+violations nested) | pmo→nesc | full | candidate_key | `NescPoleSnapshotService` candidateRow/recordRow (+ `ai_verdict`, `ai_rationale`, `ai`), record wins; rows in candidate_key order; `confidence` is `number\|string\|null` (1.1.0: PMO sends the P2 label `high\|medium\|low`, numeric when a model scored it); `set_checksum` = sha256(sorted distinct candidate_keys of the **shipped rows** joined `"\n"`) — `keysChecksum()` only as a change probe — and `set_total` | exporter over `snapshotPage` |
 | p2_runner_status | external_refs:p2_runner | pmo→nesc | delta | kind\|id | `{kind: report\|note\|rfa\|job, …P2RunnerStatusFeed row}` incl. `jobs[].p2_tasks[]`; summary in `extras.p2_runner_summary` (float-free) | exporter over `P2RunnerStatusFeed::pull` |
 | jobmaster_status | external_refs:jobmaster | pmo→nesc | delta | job_number | `JobMasterStatusFeed::pull` row | exporter over `JobMasterStatusFeed::pull` |
 | worker_activity_status | external_refs:worker_activity | pmo→nesc | delta | kind\|id | `{kind: job\|assignment, …WaRunnerNescIngest::pull row}`; `presence` present\|missing\|unknown; summary in `extras.worker_activity_summary` | exporter over `WaRunnerNescIngest::pull` |
-| dailies | — | pmo→nesc | delta | daily | legacy `dailies_since` row incl. `work_items[{seq, unit_code, quantity, qty_num, description}]` | **yes — no PMO bridge producer exists** (fixture pins the NESC consumer shape, `PmoSyncService.php:201-283`) |
+| dailies | — | pmo→nesc | delta | daily | legacy `dailies_since` row incl. `work_items[{seq, unit_code, quantity, qty_num, description}]`; `quantity` is a canonical decimal string without trailing zeros (`"2"`, `"1.5"`), `qty_num` its float | **yes — no PMO bridge producer exists** (fixture pins the NESC consumer shape, `PmoSyncService.php:201-283`) |
 | packets_wanted | — | pmo→nesc | full | job_number | `{job_number}` (one row per `inspection_packets_wanted` job) | exporter over `inspection_packets_wanted` |
 | gis_sources | — | pmo→nesc | full | id | `GisReferenceLayers::catalog()` source `{id, name, sort, layers[{id, name, role, …}]}`; icons in `extras.gis_icons` | exporter over `catalog()` + icons |
-| gis_features | — | pmo→nesc | full | layer\|feature_id | `{layer_id, layer, kind: pole\|job\|feature, feature_id, ref, source, ref_raw, lng, lat, properties (≤20 keys), geometry?}` — the `NescGisController::lookup` candidate + identity | **yes — no full-set producer exists** (the live lookup answers per ref) |
+| gis_features | — | pmo→nesc | full | layer\|feature_id | `{layer_id, layer, kind: pole\|job\|feature, feature_id, ref, source, ref_raw, lng, lat, properties (≤20 keys), geometry?}` — the `NescGisController::lookup` candidate + identity; `layer_id` is null for synthetic layers (PMO's "Comcast jobs"), whose `feature_id` is `"<layer key>:<id>"`, e.g. `jobs:JB…`; pole rows use `"<layer id>:<feature_key>"` | **yes — no full-set producer exists** (the live lookup answers per ref) |
 | pge_violations | — | pmo→nesc | full | ticket | `{ticket, payload}`; `payload` = `NescPgeController::violation()`; store only on NESC | **yes — no full-set producer exists** |
 | updates | — | API only | — | id | `UpdateOp` (`POST /updates`); never a package stream | — |
 
@@ -108,16 +114,29 @@ column is `properties` (not `attributes`).
 `RowKey::for(stream, row)` joins composite keys with `|` and prefixes kind-discriminated streams
 (`job|JB000001`); receipts and verdicts address rows by `(key, seq)`, never by batch index.
 
+#### Full streams: absence means unchanged
+
+A full stream absent from a package means **unchanged since the last receipted set**; consumers never
+treat absence as an empty set (NESC's `InboundDispatcher` runs each full-set consumer only when the
+stream is present). Producers may skip an unchanged full set and list it in
+`extras.full_streams_unchanged`. A refused full set (receipt stream `applied: false` or `refused`
+set, or every row rejected) does not advance the producer's cursor; the set travels again.
+
 ### Receipt
 
 `{format: "texstar-exchange-receipt", version: 1, package_id, receipt_id, produced_at, producer, scope,
-streams: {<stream>: {received, accepted, rejected, accepted_all, rejected_rows: [{key, seq, code, message}], cursor_to, applied_at}},
-status: applied|rejected|partial, message?}`. `receipt.json` inside a package wraps a list:
+streams: {<stream>: {received, accepted, rejected, accepted_all, rejected_rows: [{key, seq, code, message}], cursor_to, applied_at, applied?, refused?}},
+status: applied|rejected|partial, message?}`. `applied` (boolean) and `refused` (string|null, 1.1.0,
+optional): a stream with `applied: false` or a non-null `refused` had nothing applied; the producer
+must not advance its cursor. `receipt.json` inside a package wraps a list:
 `{format, version, receipts: [...]}`. "Accepted" is every row of the stream not listed in
 `rejected_rows`; `seq` is the 0-based line in the stream file. `key` is `""` when the line could not be
 parsed or keyed; `seq` still addresses it. The row codes NESC writes are `row_too_large`,
 `invalid_json`, `schema_invalid` and `row_key` (a row that cannot be keyed for its stream), plus the
-consumer's own refusals. For `poles`, a whole-set refusal (checksum, out of order, sanity floor,
+consumer's own refusals. PMO also writes `unknown_candidate`, `unknown_job`, `invalid_job_number`,
+`invalid_external_id`, `invalid_value`, `invalid_row`, `unknown_kind`, `blob_missing`, `invalid_pdf`,
+`hash_mismatch`, `conflict` and `rejected`; codes are open-ended and a producer treats any code as a
+rejection. For `poles`, a whole-set refusal (checksum, out of order, sanity floor,
 `large_drop`) makes the stream's receipt `partial`, never a failed apply.
 
 Outbound bookkeeping, which PMO mirrors for its own outbox:
@@ -137,6 +156,13 @@ Outbound bookkeeping, which PMO mirrors for its own outbox:
   package_id}`. Cursors of the other side's feeds travel verbatim.
 - A receipt for an older generation of a key never regresses a newer accepted payload, and replaying
   a receipt is a no-op.
+- **PMO deviation (1b):** PMO keeps cursor-based deltas: a receipted package advances each delta
+  stream's cursor even when rows were rejected, and a row over `max_row_bytes` is left out with a
+  `row_too_large` warning; such rows travel again only when they change. A per-key retry set arrives
+  with 1f. PMO's delta cursors are the bridge's keyset cursors and travel verbatim. Both cases are
+  surfaced as warnings. PMO still applies Consumer rule 4 before advancing: a stream whose counts do
+  not match the manifest (`received` ≠ `files[stream].rows`, or `accepted + rejected` ≠ `received`)
+  does not advance (warning `counts_mismatch:<stream>`).
 
 A receipt exists **only** for a package whose manifest verified: `applied`, or `rejected` after verify
 (`out_of_order`, `unsupported_version`, `unexpected_entry`, `hash_mismatch`, `unpacked_too_large`).
@@ -168,6 +194,12 @@ visible only on `GET /inbound/{uuid}`, and they never claim their manifest's `pa
    on PMO today) are still receipted: store them or accept-and-drop them, but answer for them.
 5. **Delta ordering:** apply delta streams in package order; never store a cursor older than the one
    already stored (see rule 1's `out_of_order`).
+6. **Media by hash, never by URL (SSRF):** `inspection_reports` URL fields are ignored (typed `null`);
+   the PDF comes from `files/<sha256>` or `PUT`/`GET /files/{sha256}` only, and a missing blob is the
+   row reject `blob_missing`. Consumers fetch `inspection_packets.photos[].file_url` only over https
+   from an allowlisted producer host; otherwise media travels by sha256 (`files/<sha256>` or
+   `/files/{sha256}`) and a URL-only photo is dropped (warning `photo_url_dropped`).
+7. **Full streams:** absence means unchanged; see [Full streams](#full-streams-absence-means-unchanged).
 Receipts travel inside the next package in the opposite direction AND are fetchable from
 `GET /inbound/{uuid}/receipt`.
 
@@ -219,14 +251,24 @@ unknown_key | unsupported_until_1d` per op by `seq`, `op_id` and `key`; more tha
 are polled at `GET /imports/{id}`).
 
 ```
-GET  /status                                     transport, contract, scope, signing_configured, limits {max_upload_mb, max_package_mb, chunk_mb, max_file_mb, max_blobs_mb, max_unpacked_mb}, pending, cursors, external_refs
-POST /outbound {include_blobs?, streams?, program?} -> 202 {package_id, status, status_url}
+GET  /status                                     transport, contract, scope, signing_configured, limits {max_upload_mb, max_package_mb, max_unpacked_mb, max_file_mb, max_blobs_mb, max_row_bytes, chunk_mb, max_chunks}, pending, cursors, external_refs
+POST /outbound {include_blobs?, streams?, program?} -> 202 {package_id, status, status_url, reused?}
 GET  /outbound/{id}   GET /outbound/{id}/download   GET /outbound/{id}/streams/{stream}?cursor=&limit=   (X-Next-Cursor, X-Has-More, X-Stream-Schema)
 POST /inbound  multipart package (≤ max_upload_mb) + auto_apply?           -> 202 {import_id, status}
 POST /inbound/{uuid}/chunks   POST /inbound/{uuid}/finalize   GET /inbound/{uuid}   POST /inbound/{uuid}/apply   GET /inbound/{uuid}/receipt
 HEAD|GET|PUT /files/{sha256}                       files by hash; PUT re-hashes the body
 POST /rows/{stream} (≤ 500 rows, ?dry_run=)        POST /updates (ops ≤ 2000 or a workbook)   GET /updates/workbook   GET /imports   GET /imports/{id}
 ```
+
+- `limits` carries all eight caps as integers (`max_row_bytes` in bytes, the rest in MB or a count);
+  `RunnerClient` reads any numeric limit it knows.
+- `POST /outbound`: a producer may answer **200** with an unchanged `ready` unreceipted package (NESC)
+  or **202** `reused: true` naming a build already in flight for the same scope (PMO); runners just
+  poll `package_id`.
+- `POST /rows/{stream}` takes `{rows: [...]}` (NESC also parses `application/x-ndjson`); rows never
+  carry media (a non-null `content_base64` → 422 `validation_failed` with `row`); a stream that is
+  unknown or of the wrong direction → 422 `validation_failed`; a full-mode stream → 422
+  `full_stream_requires_package`.
 
 ### Auth, middleware order, idempotency, rate limits
 
@@ -235,9 +277,11 @@ POST /rows/{stream} (≤ 500 rows, ?dry_run=)        POST /updates (ops ≤ 2000
   API clients are optional (NESC 1b-10: a Super-Admin page issues them): a non-login service-account
   user holding only `exchange.view` / `exchange.apply` / `updates.bulk`, a token shown once, an
   expiry, an optional IP allowlist (decided on REMOTE_ADDR, never a forwarded header) and rate limit,
-  and rotation that keeps the old token for 24 h. A disabled or deleted client, or a token that is
-  not the client's current or rotated-out one, is 401 `client_disabled`; an expired client or a
-  rotated-out token past its grace is 401 `client_expired`; a wrong address is 403 `ip_not_allowed`.
+  and rotation that keeps the old token for 24 h. A disabled or deleted client is 401 `client_disabled`;
+  an expired client is 401 `client_expired`; a rotated-out token past its grace is 401
+  `token_rotated` (use the new token); a service-account token that is neither the client's current
+  nor its rotated-out one is 401 `token_invalid`; a wrong address is 403 `ip_not_allowed` (the IP
+  allowlist is decided on the connecting address only; forwarded headers are never trusted).
   Impersonation tokens, tokens with neither ability, inactive accounts and demo-mode accounts are
   refused. Permissions: `exchange.view` (reads, `POST /outbound`), `exchange.apply` (inbound, apply,
   `PUT /files`, rows), `updates.bulk` (updates, workbook). Every mutating call is audited with `via`
@@ -275,7 +319,7 @@ NESC answers:
 | status | codes |
 |---|---|
 | 400 | `idempotency_key_required`, `hash_mismatch` |
-| 401 | `unauthenticated` (a missing, expired or revoked token; there is no `token_expired`); `client_expired`, `client_disabled` (API clients, NESC slice 1b-10) |
+| 401 | `unauthenticated` (a missing, expired or revoked token; there is no `token_expired`); API clients: `client_disabled` (disabled or deleted), `client_expired` (the client expired — an admin must extend it), `token_rotated` (a rotated-out token past its 24 h grace — use the new one), `token_invalid` (a service-account token that is neither current nor previous); the IP allowlist is decided on the connecting address only |
 | 403 | `forbidden` (also: no exchange permission at all), `impersonation_token`, `account_disabled`, `demo_mode`, `not_owner`, `ip_not_allowed` (API clients) |
 | 404 | `not_found` |
 | 405 | `method_not_allowed` |
@@ -289,9 +333,8 @@ NESC answers:
 
 An import's `rejected_code` (not an HTTP status) is one of `signature_invalid`, `direction_mismatch`,
 `unknown_producer`, `scope_mismatch`, `out_of_order`, `unsupported_version`, `unexpected_entry`,
-`unpacked_too_large`, `hash_mismatch`. The PMO-side draft also answers `token_invalid` 401 and
-`token_rotated` 401; adding them to NESC or dropping them from PMO is an
-[open item](#open-contract-items).
+`unpacked_too_large`, `hash_mismatch`. A token holding neither ability is 403 `forbidden` on both
+apps. `RunnerClient` stops on any 401/403, so the distinct 401 codes are operational only.
 
 ### Inbound: 200 vs 202
 
@@ -303,6 +346,9 @@ An import's `rejected_code` (not an HTTP status) is one of `signature_invalid`, 
 - A new package is **202** `{import_id, status}`, and `status_url` is polled until `previewed` (or
   `applied` with `auto_apply`), `rejected` or `failed`. `rejected_code` on `GET /inbound/{uuid}` names
   a pre-verify refusal, which has no receipt.
+- A verified import's `package_id` under different bytes → **200** with that settled import at
+  accept (nothing re-staged); if it reaches staging while the other import is unsettled → **409**
+  `conflict`.
 
 ### Chunk lifecycle (client uuid)
 
@@ -316,6 +362,28 @@ resending an index with the same checksum is idempotent, a different checksum is
 are ≤ `max_upload_mb`; the running assembled total is ≤ `max_package_mb` (`413 package_too_large` at
 chunk time). `finalize {total_chunks, sha256, auto_apply?}` checks the assembled hash
 (`400 hash_mismatch`). `RunnerClient::uploadInbound()` does all of this from the `limits` in `GET /status`.
+
+| situation | answer |
+|---|---|
+| `total_chunks` outside 1..`max_chunks`, `chunk_index` outside 0..total-1 | 422 `validation_failed` |
+| a chunk body over `max_upload_mb` (checked on every chunk) | 413 `package_too_large` |
+| running total over `max_package_mb` (checked on every chunk; the import is failed, chunks removed) | 413 `package_too_large` |
+| chunk body sha256 ≠ `checksum` | 400 `hash_mismatch` |
+| a 4th concurrent `uploading \| staging` import of the principal | 409 `too_many_uploads` |
+| later chunks for a uuid owned by another principal | 409 `conflict` |
+| `total_chunks` differing from the value the first chunk pinned | 409 `conflict` |
+| the same index re-sent with the same checksum | 200 `idempotent: true` |
+| the same index re-sent with a different checksum | 409 `conflict` |
+| finalize / apply by another principal | 403 `not_owner` |
+| finalize of an import that is no longer `uploading` | 409 `conflict` |
+| a missing or extra index at finalize | 409 `conflict` (message names the counts) |
+| assembled sha256 ≠ the declared `sha256` | 400 `hash_mismatch` (chunks kept for a retry) |
+| Idempotency-Key reused with a different body | 409 `idempotency_conflict` |
+| `PUT /files` over `max_file_mb` / mime outside the allowlist | 413 `file_too_large` / 422 `unsupported_media` |
+| a stream the built package does not carry (`GET /outbound/{id}/streams/{stream}`) | 404 `not_found` |
+
+An idle `uploading` import is removed after 24 h (`exchange:prune`, `upload_ttl_hours`); the uuid may
+then be reused.
 
 ### Size caps
 
@@ -460,23 +528,62 @@ symlinked): a checkout of nescdev needs this repo as a sibling of `htdocs/` — 
    streams ship byte-for-byte as today's bridge rows.
 4. **ASCII directions.** Wire directions are `nesc_to_pmo` / `pmo_to_nesc`.
 
-## Open contract items
+## PMO deviations
 
-These come from the PMO side's `docs/exchange-contract-feedback.md` (pmotest) and the NESC 1b review.
-The README text above already covers everything that needed documentation only. The items below
-change a schema or a fixture, change behaviour, or need an owner decision, so they are **not** applied
-in 1.0.0:
+Where PMO knowingly differs from NESC. Each is interoperable: the runner and the NESC importer read
+both forms.
 
-| item | proposal | needs |
+| area | NESC | PMO (1b) | why it interoperates |
+|---|---|---|---|
+| outbox (delta streams) | per-key generations; a rejected row re-stages on the next attempt | cursor-based deltas: a receipted package advances the cursor even when rows were rejected; a row over `max_row_bytes` is left out (`row_too_large` warning); such rows travel again when they change; per-key retry set in 1f | NESC's receipt applier only settles NESC's own packages; NESC's importer answers `cursor_to` = the manifest cursor even with rejects; PMO's cursors are the bridge's keyset cursors (see [Receipt](#receipt)). PMO still enforces Consumer rule 4 (`counts_mismatch:<stream>`) |
+| `POST /outbound` reuse | 200 with an unchanged ready unreceipted package | 202 `reused: true` for a queued/building build of the same scope | runners read `package_id` and poll |
+| `POST /rows` body | JSON `{rows}` or NDJSON | JSON `{rows}` only | `RunnerClient` always sends JSON |
+| `GET /files/{sha256}` of a report | `exchange.view` | also needs `exchange.apply` (403 `forbidden`); `HEAD` needs view | PMO-only hardening; NESC never fetches PMO reports |
+| `review_decisions` over HTTP | `PmoReviewPushService` sends `merged` | the frozen HTTP ingest rejects `merged`; the package path aliases it | see [Owner questions](#owner-questions) |
+| full streams | always ships the set it has | may skip an unchanged set and list it in `extras.full_streams_unchanged` | absence means unchanged on both sides |
+| `producer.version` | `config('version.current')` | `dev` or its release | informational; nobody gates on it |
+
+## Owner questions
+
+| question | options | state |
 |---|---|---|
-| `GET /status.limits` lists all eight caps | NESC adds `max_row_bytes` and `max_chunks` (`RunnerClient` already honours `max_chunks` when present) | NESC code + OpenAPI refresh |
-| `observations.external_id` length | `"maxLength": 64` (PMO's column) | schema, contract 1.1.0 |
-| `inspection_reports` URL fields | `file_url` / `download_url` / `url` typed `null`, or "consumers MUST ignore URL fields; media by sha256 only"; storage keyed on `job_number` | schema, contract 1.1.0 |
-| `inspection_packets.photos[].file_url` | require `https://`; consumers keep only the producer's host(s), otherwise fall back to `/files/<sha256>` | schema, contract 1.1.0 |
-| `review_decisions` `merged` | NESC's HTTP `pushMergeDecision` sends `merged`, which PMO's frozen HTTP ingest rejects; the package path aliases it. Is an unknown `candidate_key` `unknown_candidate` in the package path? | owner decision |
-| `readiness_feed` in PMO's receipt | add the block to `pmo-to-nesc-basic/receipt.json` + `fixtures:sign` | fixture |
-| extra error codes | `token_invalid`, `token_rotated` on both sides, or on neither (`too_many_uploads` 409 now ships on NESC) | both apps |
-| same `package_id`, different bytes | NESC answers 200 with the settled import; the PMO draft answers 409 `conflict`. Pick one | both apps |
+| `review_decisions` `merged` over HTTP | NESC's HTTP `pushMergeDecision` (`PmoReviewPushService`) sends `merged`, which PMO's frozen HTTP ingest (`NescDecisionIngest`) rejects; PMO maps `merge` to `confirmed` on the absorbed candidate and ignores `merged_into_record_id`. (a) NESC sends `merge` over HTTP — changes production data; (b) PMO's HTTP ingest accepts the `merged` alias; (c) leave it until the transport switch | open; the package path already aliases `merged` → `merge` and limits `unknown_candidate` to merge rows |
+| API-client refusal codes | NESC 1.1.0 answers `token_rotated` / `token_invalid` as PMO does, and PMO answers 403 `forbidden` for a token with neither ability as NESC does | shipped on NESC (1b); the owner confirms |
+| `permit` as an `UpdateOp` entity | add `permit` (key = permit number or `JB\|stage`) to `UpdateOp::ENTITIES` and the schema enum in 1d, or keep permits out of the bulk surface | deferred to 1d; no change in 1.1.0 |
+| confidence transport switch | PMO drops `confidence_label` and sends the label in `confidence` only after both apps run 1.1.0 (a 1.0.0 reader rejects a string confidence as `schema_invalid`) | the NESC poles transport switch stays blocked until both apps run 1.1.0 |
+
+## Changelog
+
+### 1.1.0 (2026-09-28)
+
+Additive or widening; manifest `version` / `MAJOR` stays 1 and nothing is renamed or removed. Every
+fixture except `pmo-to-nesc-basic` stays at contract 1.0.0 to prove backward reads.
+
+- `poles.confidence` and `jobs.nesc_pole_candidates[].confidence` widen to `number|string|null` (the
+  P2 label `high|medium|low`). **Sequencing:** a 1.0.0 reader rejects a string as `schema_invalid`,
+  so PMO sends the label only after both apps run 1.1.0. NESC stores `(string) confidence` as the HTTP
+  bridge does, so the row checksum does not jump at the transport switch.
+- `receipt.schema.json` `$defs.stream_receipt` gains optional `applied` (boolean) and `refused`
+  (string|null).
+- `manifest.schema.json` `extras` gains optional `full_streams_unchanged` (list of stream names).
+- Tightened, no current producer affected: `observations.external_id` `maxLength` 64 (NESC's ids are
+  ~52 chars); `inspection_reports` `file_url` / `download_url` / `url` typed `null` (NESC never sends them).
+- Descriptions: `inspection_packets.photos[].file_url` (https + allowlisted host only), `dailies`
+  `work_items[].quantity` (trimmed decimal string), `gis_features` synthetic layers.
+- Fixture `pmo-to-nesc-basic` (contract 1.1.0): the receipt answers for `readiness_feed`; pole row 1 and
+  job row 0's first candidate carry `confidence: "high"`; the `gis_features` job row is PMO's synthetic
+  layer (`layer_id: null`, `feature_id: "jobs:JB0002685018"`); `poles_set_checksum_note` says "over the
+  shipped rows". `set_checksum` is unchanged.
+- `ContractSuite::build()` records its `tempnam()` placeholder so `cleanup()` removes it.
+- NESC: `GET /status.limits` lists all eight caps; API clients answer `token_rotated` /
+  `token_invalid`; OpenAPI refreshed.
+- README: Consumer rules 6-7, full-stream absence, receipt code list, chunk lifecycle table, inbound
+  same-`package_id` rule, `POST /outbound` reuse, `POST /rows` body rules, `POST /updates` verdict
+  shape, PMO deviations, owner questions.
+
+### 1.0.0
+
+Phase 1b initial release.
 
 ## PMO implementation checklist
 
@@ -491,12 +598,18 @@ What the PMO side must do to pass `ContractSuite` and interoperate with the NESC
 2. **Receipts only after verify**, keyed by `RowKey` + `seq` (0-based line in the stream file) — never
    by batch index: translate `P2RunnerNescIngest` `errors[].index` and `WaRunnerNescIngest`'s silent
    skips into `(key, seq)` rows. Ship them in the next `pmo_to_nesc` package AND on `GET /inbound/{uuid}/receipt`.
-3. **`review_decisions`:** accept the `merged` alias for `merge` (NESC's `pushMergeDecision` sends `merged`).
-4. **`inspection_reports`:** `content_base64` is always null; resolve `files/{sha256}` from the package
-   blobs or `GET /files/{sha256}` on NESC into `content_base64` / `file_url` before calling the existing
-   ingest.
+3. **`review_decisions`:** `merged` is accepted as an alias of `merge` in the package path; a
+   `merge`/`merged` row whose `candidate_key` PMO has never seen (neither a P2 candidate nor a durable
+   record) is rejected `unknown_candidate`; `confirm`/`reject` of an unknown `candidate_key` are applied
+   exactly as the HTTP ingest does (a record is minted). PMO's `StreamApplier` applies the
+   `unknown_candidate` pre-check only when the scrubbed decision is `merge`.
+4. **`inspection_reports`:** `content_base64` is always null; consumers MUST ignore URL fields
+   (`file_url` / `download_url` / `url`, typed `null`) and resolve the PDF from `files/<sha256>` or
+   `PUT`/`GET /files/{sha256}` only, into `content_base64` before calling the existing ingest; a missing
+   blob is the row reject `blob_missing`. Key storage on `job_number`.
 5. **Exporters:** wrap `NescSyncFeed::pullPage`, `NescPoleSnapshotService::snapshotPage` (record wins,
-   candidate_key order, `set_checksum` = `keysChecksum()`), `P2RunnerStatusFeed::pull`,
+   candidate_key order, `set_checksum` over the shipped rows' distinct candidate_keys — `keysChecksum()`
+   only as a change probe), `P2RunnerStatusFeed::pull`,
    `JobMasterStatusFeed::pull`, `WaRunnerNescIngest::pull` (add `kind`), `inspection_packets_wanted`,
    `GisReferenceLayers::catalog()` + icons; **write** the three missing producers — `dailies`
    (legacy `dailies_since` row incl. `work_items[]`), `gis_features` (the full pole/job feature set in
@@ -504,16 +617,16 @@ What the PMO side must do to pass `ContractSuite` and interoperate with the NESC
    `has_more` into `X-Has-More` on `GET /outbound/{id}/streams/{stream}`; PMO cursors travel verbatim.
 6. **Unscoped packages apply to program `comcast-nesc`** (`Scope::UNSCOPED`); stamp the resolved scope on
    every row and echo it in receipts.
-7. **Mirror the caps** (60 / 200 / 2048 / 30 MB, 1 MiB rows, 8 MB chunks, 4000 chunks) and advertise
-   them in `GET /status.limits`; mirror the `kind = rows` exemption exactly (unsigned only through
+7. **Mirror the caps** (60 / 200 / 2048 / 30 / 200 MB, 1 MiB rows, 8 MB chunks, 4000 chunks) and advertise
+   all eight in `GET /status.limits`; mirror the `kind = rows` exemption exactly (unsigned only through
    `POST /rows/{stream}`, never through `POST /inbound`).
 8. **Manifest `extras` are float-free** (strict canonical signing): `p2_runner_summary` rates as strings.
 9. **Timestamps:** ISO-8601 everywhere except `latest_event_at` (SQL datetime).
 10. Run `FixturesTest`'s counterpart: `ContractSuite::cases()` through the PMO reader, and the PMO
     emitters against `pmo-to-nesc-basic/expectations.json` `source` lines.
 11. **Observations:** a row is the legacy obs item. Map `field nesc_pole_count` → `observation_type
-    pole_count` and every other field → `note` (per-pole `field_gps` expansion is a later seam). An
-    `external_id` longer than PMO's column is a `(key, seq)` reject.
+    pole_count` and every other field → `note` (per-pole `field_gps` expansion is a later seam).
+    `external_id` is ≤ 64 chars (schema `maxLength`); a longer one is a `(key, seq)` reject.
 12. **The same `/api/v1/exchange/*` surface as `openapi/nesc-exchange.openapi.json`:**
     - bearer-only auth with the same refusals, and the same three permissions on the owner's role
     - the limiters in the same physical order (pre-auth IP limiter first, heavy limiters before
@@ -536,13 +649,22 @@ What the PMO side must do to pass `ContractSuite` and interoperate with the NESC
     latest generation is re-staged on the next attempt), `seq` stamped at package time, and every
     unsettled row per download with older unreceipted packages superseded. PMO's receipt for a NESC
     package rides in PMO's next package (receipt.json bound by `receipts[].sha256` / `bytes`) AND is
-    served on `GET /inbound/{uuid}/receipt`.
+    served on `GET /inbound/{uuid}/receipt`. PMO (1b) keeps cursor-based deltas instead (a receipted
+    package advances each delta stream's cursor even when rows were rejected; a row over
+    `max_row_bytes` is left out with a `row_too_large` warning; such rows travel again only when they
+    change; a per-key retry set arrives with 1f; PMO's delta cursors are the bridge's keyset cursors and
+    travel verbatim) — see [PMO deviations](#pmo-deviations). PMO's `ReceiptApplier` must enforce
+    Consumer rule 4: mismatched counts → do not advance that stream, warning `counts_mismatch:<stream>`.
 15. **Bulk updates** (`POST /updates`, `GET /updates/workbook`):
     - the same verdict vocabulary (`applied | unchanged | rejected | forbidden | unknown_key |
       unsupported_until_1d`), ≤ 500 ops synchronous and more queued (202), ≤ 2000 ops per request
     - blank = unchanged, `CLEAR` = clear
     - PMO decides which of its fields are writable. Everything else answers `unsupported_until_1d`
       until the EntityMutator equivalent exists.
+    - each verdict is `{seq, op_id, key, entity, field, op, outcome, message}` (`RowVerdict::toArray()`
+      + extra); an op failing `updates.schema.json` fails the whole request 422 `validation_failed`
+      with `row {stream: null, seq, key: null}`
+    - `permit` is not an `UpdateOp` entity in 1.1.0 (deferred to 1d; see [Owner questions](#owner-questions)).
 16. **Package-mode schedule:** with PMO's bridge unused, PMO's own pulls from NESC do not exist (PMO never
     called NESC). Nothing on PMO needs a transport switch, only the Import Center kind `nesc:exchange`
     and a "Download for NESC" button.

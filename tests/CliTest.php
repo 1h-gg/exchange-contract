@@ -24,6 +24,18 @@ final class CliTest extends TestCase
     /** @var array<string, FakeTransport> base url => transport */
     private array $transports = [];
 
+    /** @var list<string> */
+    private array $tokenFiles = [];
+
+    protected function tearDown(): void
+    {
+        foreach ($this->tokenFiles as $path) {
+            @unlink($path);
+        }
+        $this->tokenFiles = [];
+        parent::tearDown();
+    }
+
     private function app(array $env = []): App
     {
         $this->out = [];
@@ -143,7 +155,8 @@ final class CliTest extends TestCase
         foreach ($this->out as $line) {
             $this->assertStringEndsWith(' ok', $line);
         }
-        $out = tempnam(sys_get_temp_dir(), 'txx-cli').'.txx.zip';
+        $base = tempnam(sys_get_temp_dir(), 'txx-cli');
+        $out = $base.'.txx.zip';
         try {
             $this->assertSame(0, $this->app()->run(['fixtures:build', 'unscoped', '--out='.$out]));
             $this->assertSame([$out], $this->out);
@@ -152,6 +165,7 @@ final class CliTest extends TestCase
             $this->assertStringContainsString('"program":"comcast-nesc"', $this->out[1]);
         } finally {
             @unlink($out);
+            @unlink($base);
             ContractSuite::cleanup();
         }
         $this->assertSame(0, $this->app()->run(['schemas:audit']));
@@ -179,6 +193,7 @@ final class CliTest extends TestCase
     {
         $path = (string) tempnam(sys_get_temp_dir(), 'txx-token');
         file_put_contents($path, $token."\n");
+        $this->tokenFiles[] = $path;
 
         return $path;
     }

@@ -2,7 +2,7 @@
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "https://texstar.app/exchange/v1/streams/observations.schema.json",
     "title": "observations",
-    "description": "Legacy obs item {jb, entity, entity_id, field, value, observed_at, note} from PmoSyncService::pushObservations, plus external_id = \"nesc:obs:{jb}:{field}:{sha8(value)}\". Key: external_id. Delta.",
+    "description": "Legacy obs item {jb, entity, entity_id, field, value, observed_at, note} from PmoSyncService::pushObservations, plus external_id = \"nesc:obs:{jb}:{field}:{sha8(value)}\" (<= 64 chars). PMO's exchange importer consumes the row, translated to its push_observations ingest (field nesc_pole_count -> observation_type pole_count, every other field -> note). Key: external_id. Delta.",
     "type": "object",
     "required": [
         "external_id",
@@ -16,7 +16,9 @@
     "properties": {
         "external_id": {
             "type": "string",
-            "pattern": "^nesc:obs:JB\\d{6,}:[a-z0-9_]+:[a-f0-9]{8}$"
+            "pattern": "^nesc:obs:JB\\d{6,}:[a-z0-9_]+:[a-f0-9]{8}$",
+            "maxLength": 64,
+            "description": "At most 64 characters (PMO's column); NESC's longest field name, nesc_pole_coordinates, yields about 52."
         },
         "jb": {
             "$ref": "../common.schema.json#/$defs/jb"

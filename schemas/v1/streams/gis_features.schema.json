@@ -2,7 +2,7 @@
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "https://texstar.app/exchange/v1/streams/gis_features.schema.json",
     "title": "gis_features",
-    "description": "NescGisController lookup candidate shape, one row per feature: {layer_id, layer, kind: pole|job|feature, feature_id, ref, lng, lat, properties (<=20 keys), geometry?}. PMO exporter to be written. Mode full. Key: layer|feature_id.",
+    "description": "NescGisController lookup candidate shape, one row per feature: {layer_id, layer, kind: pole|job|feature, feature_id, ref, lng, lat, properties (<=20 keys), geometry?}. layer_id is null for synthetic layers (PMO's \"Comcast jobs\"); their feature_id is \"<layer key>:<id>\", e.g. jobs:JB0002685018. Pole rows use \"<layer id>:<feature_key>\". Mode full. Key: layer|feature_id.",
     "type": "object",
     "required": [
         "layer",
@@ -17,7 +17,8 @@
             "type": [
                 "integer",
                 "null"
-            ]
+            ],
+            "description": "null for synthetic layers (PMO's \"Comcast jobs\")"
         },
         "layer": {
             "type": "string",
@@ -35,7 +36,8 @@
         "feature_id": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 120
+            "maxLength": 120,
+            "description": "opaque: \"<layer id>:<feature_key>\" for layer rows, \"<layer key>:<id>\" (e.g. jobs:JB0002685018) for synthetic layers"
         },
         "ref": {
             "type": [

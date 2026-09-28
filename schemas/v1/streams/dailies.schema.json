@@ -121,7 +121,8 @@
                             "string",
                             "number",
                             "null"
-                        ]
+                        ],
+                        "description": "canonical decimal string without trailing zeros (\"2\", \"1.5\"); qty_num is its float"
                     },
                     "qty_num": {
                         "type": [

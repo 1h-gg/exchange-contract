@@ -150,6 +150,17 @@
                         "null"
                     ],
                     "format": "date-time"
+                },
+                "applied": {
+                    "type": "boolean",
+                    "description": "false when nothing of this stream was applied (a refused set)."
+                },
+                "refused": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "nothing of this stream was applied; the producer must not advance its cursor"
                 }
             }
         }

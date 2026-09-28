@@ -2,7 +2,7 @@
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "https://texstar.app/exchange/v1/streams/inspection_reports.schema.json",
     "title": "inspection_reports (deliverables:report)",
-    "description": "P2ReportOutboxService row (P2ContractPinTest::REPORT_KEYS) with content_base64 forced to null: the PDF travels as files/<sha256> or is fetched via /files/{sha256}. Key: external_report_id. Delta.",
+    "description": "P2ReportOutboxService row (P2ContractPinTest::REPORT_KEYS) with content_base64 forced to null: the PDF travels as files/<sha256> or is fetched via /files/{sha256}. URL fields (file_url, download_url, url) are never set; consumers ignore them and resolve the PDF by sha256 only (a missing blob is the row reject blob_missing). Consumers key storage on job_number; job_id is informational. Key: external_report_id. Delta.",
     "type": "object",
     "required": [
         "external_report_id",
@@ -110,6 +110,18 @@
         "content_base64": {
             "type": "null",
             "description": "MUST be null in a package; the HTTP bridge embeds the PDF here, the package never does."
+        },
+        "file_url": {
+            "type": "null",
+            "description": "never set in a package; media travels by sha256 only"
+        },
+        "download_url": {
+            "type": "null",
+            "description": "never set in a package; media travels by sha256 only"
+        },
+        "url": {
+            "type": "null",
+            "description": "never set in a package; media travels by sha256 only"
         },
         "replace": {
             "type": "boolean"

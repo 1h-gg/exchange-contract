@@ -1,7 +1,7 @@
 {
     "format": "texstar-exchange",
     "version": 1,
-    "contract": "1.0.0",
+    "contract": "1.1.0",
     "kind": "package",
     "package_id": "7a2b1d3c-4e5f-4a6b-9c8d-0e1f2a3b4c5d",
     "direction": "pmo_to_nesc",
@@ -10,7 +10,7 @@
         "app": "pmo",
         "version": "2026.09.27",
         "instance": "pmo",
-        "contract": "1.0.0"
+        "contract": "1.1.0"
     },
     "scope": {
         "tenant": "texstar",
@@ -59,8 +59,8 @@
             "stream": "jobs",
             "schema": "jobs@1",
             "rows": 2,
-            "sha256": "69a8524a30781fae45e217160d671a025fcca38a0f2ce2902b074902693e7883",
-            "bytes": 5160,
+            "sha256": "4e4afc8d7ef3d9724925404a232d86ead960192b6cefd53edf15443e54c1dcd5",
+            "bytes": 5162,
             "mode": "delta"
         },
         {
@@ -68,8 +68,8 @@
             "stream": "poles",
             "schema": "poles@1",
             "rows": 3,
-            "sha256": "2cc39aab8f89f37422c92a0960cd60def1f887e1e50f620a8f3a93bcc106d6b9",
-            "bytes": 1895,
+            "sha256": "337c4761cca4de2303f1e5fd908105b96ddb38023c6ef996b0a1ca0230a1150a",
+            "bytes": 1897,
             "mode": "full",
             "set_checksum": "84d0b0db1d93b209ade25384c83069d1d475cc0e1eeb4e65b63f2200be533bf0",
             "set_total": 3
@@ -133,8 +133,8 @@
             "stream": "gis_features",
             "schema": "gis_features@1",
             "rows": 3,
-            "sha256": "abd2c282f31884be3927db75e6f97f3669a653112731e67eea63fa739147c35c",
-            "bytes": 1099,
+            "sha256": "8ac2f17c6852c1a9b90dcdc160336bdedb32602ffa1a9e47d3333f1e086ed8aa",
+            "bytes": 1187,
             "mode": "full"
         },
         {
@@ -152,8 +152,8 @@
         {
             "package_id": "4c5d6e7f-8a9b-4c0d-8e1f-2a3b4c5d6e7f",
             "path": "receipt.json",
-            "sha256": "8ad52a2e9f57782c5b8ba305a7a7560906d80f847953f0f76324d5cc545bb3c4",
-            "bytes": 3833
+            "sha256": "9478271047a4952662d239ff911c11cfd11211a13d7bcab9d0d0f22681c24fc5",
+            "bytes": 4211
         }
     ],
     "extras": {
@@ -257,6 +257,6 @@
     "signature": {
         "alg": "HMAC-SHA256",
         "key_id": "texstar:comcast",
-        "value": "dfbb27ccb8063e05e94390694f4d63451eaea03b35c5a57cc684fe2a7e5f0a5b"
+        "value": "b024784c66b4040b982e52abfb7c459345749e138e83eb2e304d4e564df0baa2"
     }
 }

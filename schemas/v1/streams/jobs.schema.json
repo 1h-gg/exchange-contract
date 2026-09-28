@@ -398,8 +398,10 @@
                     "confidence": {
                         "type": [
                             "number",
+                            "string",
                             "null"
-                        ]
+                        ],
+                        "description": "PMO sends the P2 label high|medium|low; numeric when a model scored it"
                     },
                     "evidence_count": {
                         "type": [

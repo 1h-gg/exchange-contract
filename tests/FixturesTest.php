@@ -245,4 +245,50 @@ final class FixturesTest extends TestCase
         $this->assertSame(1, $pmo[0]->streams['review_decisions']->rejectedRows[0]['seq']);
         $this->assertStringStartsWith('nesc-match-3-', $pmo[0]->streams['review_decisions']->rejectedRows[0]['key']);
     }
+
+    public function test_pmo_receipt_answers_for_every_stream_of_the_nesc_package_including_readiness_feed(): void
+    {
+        $pmo = PackageReader::open(ContractSuite::build('pmo-to-nesc-basic'))->receipts()[0];
+        $this->assertSame(
+            ['readiness', 'readiness_feed', 'inspection_reports', 'inspection_packets', 'review_decisions', 'observations', 'worker_activity', 'external_refs'],
+            array_keys($pmo->streams),
+        );
+        $feed = $pmo->streams['readiness_feed'];
+        $this->assertSame([1, 1, 0, true], [$feed->received, $feed->accepted, $feed->rejected, $feed->acceptedAll]);
+    }
+
+    public function test_contract_1_1_0_rows_in_pmo_to_nesc_basic_and_every_other_fixture_stays_1_0_0(): void
+    {
+        $reader = PackageReader::open(ContractSuite::build('pmo-to-nesc-basic'));
+        $reader->verify(ContractSuite::keyRing());
+        $this->assertSame('1.1.0', $reader->manifestDto()->contract);
+        $this->assertSame('1.1.0', $reader->manifestDto()->producer->contract);
+        $poles = iterator_to_array($reader->rows('poles'));
+        $this->assertSame([0.97, 'high', 0.55], array_column($poles, 'confidence'), 'the P2 label travels in confidence; one numeric kept');
+        $jobs = iterator_to_array($reader->rows('jobs'));
+        $this->assertSame('high', $jobs[0]['nesc_pole_candidates'][0]['confidence']);
+        $job = iterator_to_array($reader->rows('gis_features'))[2];
+        $this->assertNull($job['layer_id']);
+        $this->assertSame('jobs:JB0002685018', $job['feature_id']);
+        $this->assertSame(['job_id', 'description', 'status', 'pole_count', 'updated_at'], array_keys($job['properties']));
+
+        foreach (self::FIXTURES as $name) {
+            if ($name === 'pmo-to-nesc-basic') {
+                continue;
+            }
+            $manifest = json_decode((string) file_get_contents(ContractSuite::dir($name).'/manifest.json'), true);
+            $this->assertSame('1.0.0', $manifest['contract'] ?? '1.0.0', $name.' proves 1.0.0 packages still read');
+        }
+    }
+
+    public function test_cleanup_removes_the_temp_name_placeholder_with_the_zip(): void
+    {
+        $zip = ContractSuite::build('unscoped');
+        $placeholder = substr($zip, 0, -strlen('-unscoped.txx.zip'));
+        $this->assertFileExists($zip);
+        $this->assertFileExists($placeholder);
+        ContractSuite::cleanup();
+        $this->assertFileDoesNotExist($zip);
+        $this->assertFileDoesNotExist($placeholder);
+    }
 }

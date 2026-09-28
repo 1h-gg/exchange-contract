@@ -174,6 +174,44 @@ final class SchemaValidatorTest extends TestCase
         $this->assertSame(['$.content_base64:type'], $this->keywords($registry->validateRow('inspection_reports', $row)));
     }
 
+    public function test_contract_1_1_0_bounds_and_widenings(): void
+    {
+        $registry = new SchemaRegistry;
+        $obs = ['external_id' => 'nesc:obs:JB0002685018:nesc_pole_coordinates:3ce8b3ab', 'jb' => 'JB0002685018', 'entity' => 'job', 'entity_id' => '1', 'field' => 'nesc_pole_coordinates', 'value' => '[]', 'observed_at' => '2026-09-01T12:00:00Z'];
+        $this->assertSame([], $registry->validateRow('observations', $obs), 'NESC\'s longest external_id fits');
+        $obs['external_id'] = 'nesc:obs:JB0002685018:'.str_repeat('x', 34).':3ce8b3ab';
+        $this->assertSame(65, strlen($obs['external_id']));
+        $this->assertSame(['$.external_id:maxLength'], $this->keywords($registry->validateRow('observations', $obs)));
+
+        $report = [
+            'external_report_id' => 'nesc:inspection:1:r1', 'job_id' => 'JB000001', 'job_number' => 'JB000001', 'pole_identifier' => 'P1', 'variant' => 'nesc', 'revision' => 1,
+            'nesc_inspection_id' => 1, 'p2_job_record_id' => null, 'p2_task_record_id' => null, 'p2_task_name' => null, 'task_type' => null, 'comcast_task_owner' => null,
+            'filename' => 'x.pdf', 'inspected_at' => '2026-09-01T12:00:00Z', 'inspector_name' => null, 'sha256' => str_repeat('a', 64), 'content_base64' => null, 'replace' => true,
+            'file_url' => null, 'download_url' => null, 'url' => null,
+        ];
+        $this->assertSame([], $registry->validateRow('inspection_reports', $report));
+        $report['file_url'] = 'http://169.254.169.254/latest';
+        $report['url'] = 'https://nesc.example/x.pdf';
+        $this->assertSame(['$.file_url:type', '$.url:type'], $this->keywords($registry->validateRow('inspection_reports', $report)));
+
+        $pole = json_decode(explode("\n", (string) file_get_contents(dirname(__DIR__).'/fixtures/v1/pmo-to-nesc-basic/streams/poles.ndjson'))[0], true);
+        foreach (['high', 0.92, null] as $confidence) {
+            $this->assertSame([], $registry->validateRow('poles', ['confidence' => $confidence] + $pole));
+        }
+        $this->assertSame(['$.confidence:type'], $this->keywords($registry->validateRow('poles', ['confidence' => true] + $pole)));
+        $this->assertSame([], $registry->validateRow('jobs', ['job_number' => 'JB000001', 'nesc_pole_candidates' => [['candidate_key' => str_repeat('a', 64), 'confidence' => 'medium']]]));
+
+        $receipt = json_decode((string) file_get_contents(dirname(__DIR__).'/schemas/v1/receipt.schema.json'), true);
+        $stream = ['received' => 3, 'accepted' => 0, 'rejected' => 3, 'accepted_all' => false, 'rejected_rows' => [], 'applied' => false, 'refused' => 'large_drop'];
+        $this->assertSame([], (new SchemaValidator)->validate($stream, $receipt['$defs']['stream_receipt']));
+        $stream['applied'] = 'no';
+        $this->assertSame(['$.applied:type'], $this->keywords((new SchemaValidator)->validate($stream, $receipt['$defs']['stream_receipt'])));
+
+        $manifest = json_decode(json_encode($this->draft()->toArray() + ['signature' => null]), true);
+        $manifest['extras'] = ['full_streams_unchanged' => ['gis_features', 'pge_violations']];
+        $this->assertSame([], $registry->validateManifest($manifest));
+    }
+
     public function test_kind_discriminated_streams_use_one_of(): void
     {
         $registry = new SchemaRegistry;

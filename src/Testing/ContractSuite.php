@@ -107,7 +107,16 @@ final class ContractSuite
     public static function build(string $name, ?string $zipPath = null): string
     {
         $dir = self::dir($name);
-        $zipPath ??= tempnam(sys_get_temp_dir(), 'txx-fixture-').'-'.$name.'.txx.zip';
+        if ($zipPath === null) {
+            // tempnam() reserves a unique name atomically on a shared /tmp; the 0-byte placeholder is
+            // recorded so cleanup() removes it together with the zip.
+            $placeholder = tempnam(sys_get_temp_dir(), 'txx-fixture-');
+            if ($placeholder === false) {
+                throw new \RuntimeException('Cannot reserve a temp name for '.$name);
+            }
+            self::$built[] = $placeholder;
+            $zipPath = $placeholder.'-'.$name.'.txx.zip';
+        }
         @unlink($zipPath);
         $zip = new \ZipArchive;
         if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {

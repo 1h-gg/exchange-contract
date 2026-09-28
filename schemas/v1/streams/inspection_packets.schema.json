@@ -226,7 +226,8 @@
                         "pattern": "^[a-f0-9]{64}$"
                     },
                     "file_url": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Built from the producer's app.url. Consumers fetch it only over https from an allowlisted producer host; otherwise the photo travels by sha256 (files/<sha256> or /files/{sha256}) and a URL-only photo is dropped (warning photo_url_dropped)."
                     }
                 }
             }
