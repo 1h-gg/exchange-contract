@@ -169,7 +169,8 @@
                             "type": "string",
                             "enum": [
                                 "package",
-                                "rows"
+                                "rows",
+                                "updates"
                             ]
                         }
                     },
@@ -2067,6 +2068,94 @@
                     }
                 }
             }
+        },
+        "/updates": {
+            "post": {
+                "operationId": "exchange.updates.store",
+                "description": "JSON `{ops: [UpdateOp...], dry_run?, create?}` (at most 2000 ops) or multipart `workbook` (.xlsx from\nGET /updates/workbook, edited) with `dry_run` / `create`. Up to 500 ops answer 200 with a verdict per\nop (`applied | unchanged | rejected | forbidden | unknown_key | unsupported_until_1d`, addressed by\n`seq`, `op_id` and `key`); more answer 202 with the batch to poll at GET /imports/{id}. `dry_run`\npreviews through the same dispatcher and writes nothing; `create` (unknown keys become rows) is\nPhase 1d's and is answered `unsupported_until_1d`.",
+                "summary": "Apply bulk updates",
+                "tags": [
+                    "Updates"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdatesRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/updates/workbook": {
+            "get": {
+                "operationId": "exchange.updates.workbook",
+                "description": "The .xlsx with sheets Jobs, Tasks, Poles, Violations and Holds: read-only columns grey, editable\ncolumns white (blank = no change, CLEAR empties), Phase 1d columns yellow, a Lists legend, and hidden\n`_meta` / `_base_*` sheets that let the import tell an edit from an exported value. `program` stamps\nthe scope.",
+                "summary": "Download the bulk-update workbook",
+                "tags": [
+                    "Updates"
+                ],
+                "parameters": [
+                    {
+                        "name": "program",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "Content-Disposition": {
+                                "required": true,
+                                "schema": {
+                                    "type": "string"
+                                },
+                                "example": "attachment; filename=.xlsx"
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
         }
     },
     "components": {
@@ -2205,6 +2294,109 @@
                     "rows"
                 ],
                 "title": "RowsPushRequest"
+            },
+            "UpdatesRequest": {
+                "type": "object",
+                "properties": {
+                    "ops": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "op": {
+                                    "type": "string",
+                                    "enum": [
+                                        "update",
+                                        "clear",
+                                        "create",
+                                        "override",
+                                        "clear_override",
+                                        "delete",
+                                        "set_status",
+                                        "link_external_ref"
+                                    ]
+                                },
+                                "entity": {
+                                    "type": "string",
+                                    "enum": [
+                                        "job",
+                                        "task",
+                                        "pole",
+                                        "violation",
+                                        "hold"
+                                    ]
+                                },
+                                "key": {
+                                    "type": "string",
+                                    "maxLength": 255
+                                },
+                                "field": {
+                                    "type": "string",
+                                    "maxLength": 80
+                                },
+                                "value": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "reason": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ],
+                                    "maxLength": 500
+                                },
+                                "program": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ],
+                                    "maxLength": 80
+                                },
+                                "origin": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ],
+                                    "maxLength": 40
+                                },
+                                "origin_ref": {
+                                    "type": [
+                                        "array",
+                                        "null"
+                                    ],
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "op",
+                                "entity",
+                                "key",
+                                "field"
+                            ]
+                        },
+                        "minItems": 1,
+                        "maxItems": 2000
+                    },
+                    "dry_run": {
+                        "type": "boolean"
+                    },
+                    "create": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "ops"
+                ],
+                "title": "UpdatesRequest"
             }
         },
         "responses": {

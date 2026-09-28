@@ -152,8 +152,10 @@ operations are async with a pollable status (`outbound: queued → building → 
 The reference document is `openapi/nesc-exchange.openapi.json` (OpenAPI 3.1, exported from NESC by
 `php artisan scramble:export`, byte-diffed by NESC's `OpenApiSpecTest`, refreshed here with each slice that
 changes the surface; served interactively at NESC's `/docs/api` for `exchange.view` holders). PMO's
-implementation must satisfy the same document; `POST /updates` and `GET /updates/workbook` are not in it yet
-(NESC slice 8).
+implementation must satisfy the same document, `POST /updates` and `GET /updates/workbook` included (NESC
+slice 8: ops as JSON or the edited XLSX workbook, verdicts `applied | unchanged | rejected | forbidden |
+unknown_key | unsupported_until_1d` per op by `seq`, `op_id` and `key`; more than 500 ops answer 202 and
+are polled at `GET /imports/{id}`).
 
 ```
 GET  /status                                     contract, scope, limits {max_upload_mb, max_package_mb, chunk_mb, max_file_mb}, pending, cursors
