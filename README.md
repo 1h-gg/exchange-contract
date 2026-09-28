@@ -149,6 +149,12 @@ envelope `{"error": {"code", "message", "row"?: {stream, seq, key}, "correlation
 operations are async with a pollable status (`outbound: queued → building → ready → receipted | failed`;
 `inbound: uploading → staging → previewed → applying → applied | failed | rejected`).
 
+The reference document is `openapi/nesc-exchange.openapi.json` (OpenAPI 3.1, exported from NESC by
+`php artisan scramble:export`, byte-diffed by NESC's `OpenApiSpecTest`, refreshed here with each slice that
+changes the surface; served interactively at NESC's `/docs/api` for `exchange.view` holders). PMO's
+implementation must satisfy the same document; `POST /updates` and `GET /updates/workbook` are not in it yet
+(NESC slice 8).
+
 ```
 GET  /status                                     contract, scope, limits {max_upload_mb, max_package_mb, chunk_mb, max_file_mb}, pending, cursors
 POST /outbound {include_blobs?, streams?, program?} -> 202 {package_id, status, status_url}
