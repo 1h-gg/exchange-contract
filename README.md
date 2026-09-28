@@ -189,6 +189,12 @@ POST /rows/{stream} (≤ 500 rows, ?dry_run=)        POST /updates (ops ≤ 2000
 
 - **Auth:** a Sanctum bearer only, either a field login / pairing token (ability `field`, `via: runner`)
   or an API-client token (ability `exchange`, `via: client`). There is no session fallback.
+  API clients are optional (NESC 1b-10: a Super-Admin page issues them): a non-login service-account
+  user holding only `exchange.view` / `exchange.apply` / `updates.bulk`, a token shown once, an
+  expiry, an optional IP allowlist (decided on REMOTE_ADDR, never a forwarded header) and rate limit,
+  and rotation that keeps the old token for 24 h. A disabled or deleted client, or a token that is
+  not the client's current or rotated-out one, is 401 `client_disabled`; an expired client or a
+  rotated-out token past its grace is 401 `client_expired`; a wrong address is 403 `ip_not_allowed`.
   Impersonation tokens, tokens with neither ability, inactive accounts and demo-mode accounts are
   refused. Permissions: `exchange.view` (reads, `POST /outbound`), `exchange.apply` (inbound, apply,
   `PUT /files`, rows), `updates.bulk` (updates, workbook). Every mutating call is audited with `via`
@@ -218,7 +224,7 @@ NESC answers:
 | status | codes |
 |---|---|
 | 400 | `idempotency_key_required`, `hash_mismatch` |
-| 401 | `unauthenticated` (a missing, expired or revoked token; there is no `token_expired`); `client_expired`, `client_disabled` (API clients, NESC slice 1b-10, not shipped) |
+| 401 | `unauthenticated` (a missing, expired or revoked token; there is no `token_expired`); `client_expired`, `client_disabled` (API clients, NESC slice 1b-10) |
 | 403 | `forbidden`, `impersonation_token`, `account_disabled`, `demo_mode`, `not_owner`, `ip_not_allowed` (API clients) |
 | 404 | `not_found` |
 | 405 | `method_not_allowed` |
@@ -453,6 +459,9 @@ What the PMO side must do to pass `ContractSuite` and interoperate with the NESC
     - the client-uuid chunk lifecycle with owner checks
     - `GET /files/{sha256}` serving registered shas only, and `PUT /files` re-hashing the body and
       sniffing the mime against `[application/pdf, image/jpeg, image/png, image/webp, application/zip]`
+    - optionally, API clients as NESC ships them: service accounts that can never sign in, be paired,
+      impersonated, approved or given a role; `GRANTABLE` permissions only; the token stored hashed;
+      the same 401 / 403 codes above
 13. **Keys:** the same secret under the same key id (`texstar:comcast`), parsed the same way (split on
     `,`, then the first `=`). A blank or malformed ring fails closed (no build, and every package is
     `signature_invalid`). Never log the secret.
