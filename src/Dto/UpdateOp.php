@@ -9,7 +9,7 @@ namespace Texstar\Exchange\Dto;
  * others create, delete or re-state rows. Which ops, entities and fields a receiver applies is that
  * receiver's capability, not a property of the op: an op the receiver cannot apply yet is answered
  * `unsupported_until_1d`, and an op on an entity the receiver keeps no rows of is answered `rejected`
- * (or `unknown_key` while its key names nothing). `permit` (1.3.0) is keyed by permit number.
+ * whatever its key (never `unknown_key`). `permit` (1.3.0) is keyed by permit number.
  */
 final readonly class UpdateOp
 {

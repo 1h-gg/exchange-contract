@@ -2,7 +2,7 @@
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "https://texstar.app/exchange/v1/updates.schema.json",
     "title": "UpdateOp",
-    "description": "One targeted bulk update (POST /api/v1/exchange/updates, the machine form of the XLSX workbook). Which ops, entities and fields a receiver applies is its own capability: an op it cannot apply yet is answered unsupported_until_1d, and an op on an entity it keeps no rows of is answered rejected (unknown_key while the key names nothing). Do not send permit ops to a 1.2.0 reader.",
+    "description": "One targeted bulk update (POST /api/v1/exchange/updates, the machine form of the XLSX workbook). Which ops, entities and fields a receiver applies is its own capability: an op it cannot apply yet is answered unsupported_until_1d, and an op on an entity it keeps no rows of is answered rejected whatever its key (never unknown_key). Do not send permit ops to a 1.2.0 reader.",
     "type": "object",
     "required": [
         "id",

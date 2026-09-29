@@ -591,7 +591,7 @@ Additive, but still a wire change; manifest `version` / `MAJOR` stays 1 and no f
   `contract.version` first).
 - Which ops, entities and fields a receiver applies is its own capability: an op it cannot apply yet is
   answered `unsupported_until_1d`, and an op on an entity it keeps no rows of is answered `rejected`
-  (`unknown_key` while the key names nothing). PMO applies permit ops through its permit override
+  whatever its key (never `unknown_key`). PMO applies permit ops through its permit override
   path; NESC keeps no permits.
 - Owner decisions of 2026-09-28 recorded: [Owner questions](#owner-questions), Consumer rules 4
   (resend on change until 1f) and 6 (production photo allowlist `nesc.texstar.app`).
