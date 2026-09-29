@@ -2,7 +2,7 @@
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "https://texstar.app/exchange/v1/updates.schema.json",
     "title": "UpdateOp",
-    "description": "One targeted bulk update (POST /api/v1/exchange/updates, the machine form of the XLSX workbook). 1b supports op = update | clear through today's write paths; create, override, clear_override, delete, set_status and link_external_ref are reserved for 1d's EntityMutator and answered unsupported_until_1d.",
+    "description": "One targeted bulk update (POST /api/v1/exchange/updates, the machine form of the XLSX workbook). Which ops, entities and fields a receiver applies is its own capability: an op it cannot apply yet is answered unsupported_until_1d, and an op on an entity it keeps no rows of is answered rejected (unknown_key while the key names nothing). Do not send permit ops to a 1.2.0 reader.",
     "type": "object",
     "required": [
         "id",
@@ -35,14 +35,15 @@
                 "task",
                 "pole",
                 "violation",
-                "hold"
+                "hold",
+                "permit"
             ]
         },
         "key": {
             "type": "string",
             "minLength": 1,
             "maxLength": 255,
-            "description": "job: JB; task: external_task_id (TSK), synthetic key, or \"<system>|<external_task_id>\"; pole: candidate_key or \"JB|pole_identifier\"; violation: \"<pole key>|<code>\"; hold: JB."
+            "description": "job: JB; task: external_task_id (TSK), synthetic key, or \"<system>|<external_task_id>\"; pole: candidate_key or \"JB|pole_identifier\"; violation: \"<pole key>|<code>\"; hold: JB; permit: the permit number, or \"JB…|permit_number\" when a number repeats."
         },
         "field": {
             "type": "string",

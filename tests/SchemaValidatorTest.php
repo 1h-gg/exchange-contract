@@ -149,6 +149,15 @@ final class SchemaValidatorTest extends TestCase
         $this->assertSame('UpdateOp', $registry->forStream('updates')['title']);
     }
 
+    public function test_updates_schema_accepts_permit_and_refuses_an_unknown_entity(): void
+    {
+        $registry = new SchemaRegistry;
+        $op = ['id' => '0b5c8f5e-6f1d-4c2a-9b7e-3d4a5f6e7a8b', 'op' => 'update', 'entity' => 'permit', 'key' => 'P-2026-0142', 'field' => 'status', 'value' => 'approved', 'reason' => null, 'program' => null];
+        $this->assertSame([], $registry->validateRow('updates', $op));
+        $this->assertSame([], $registry->validateRow('updates', ['key' => 'JB0002690301|P-2026-0142'] + $op), 'a repeated number is keyed by JB');
+        $this->assertSame(['$.entity:enum'], $this->keywords($registry->validateRow('updates', ['entity' => 'invoice'] + $op)));
+    }
+
     public function test_p2_runner_job_target_task_is_the_task_object_pmo_stores(): void
     {
         $registry = new SchemaRegistry;

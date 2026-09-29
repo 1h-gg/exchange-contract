@@ -53,7 +53,7 @@ from validated fields only.
 ### Manifest
 
 ```
-format: "texstar-exchange"          version: 1 (reader accepts == its MAJOR)      contract: "1.2.0"
+format: "texstar-exchange"          version: 1 (reader accepts == its MAJOR)      contract: "1.3.0"
 kind: "package" | "rows"            package_id: uuid v4                            direction: nesc_to_pmo | pmo_to_nesc
 created_at: ISO-8601                producer: {app: nesc|pmo, version, instance, contract}
 scope: {tenant, contract, program, instance|null}   OPTIONAL — absent => Scope::UNSCOPED (texstar/comcast/comcast-nesc)
@@ -201,13 +201,19 @@ visible only on `GET /inbound/{uuid}`, and they never claim their manifest's `pa
    up (it keeps those rows pending), and a stream the receipt omits stays pending: omitting one means
    it is sent again. Streams with no ingest on the receiving side (`external_refs`, `readiness_feed`
    on PMO today) are still receipted: store them or accept-and-drop them, but answer for them.
+   **Resend (decided 2026-09-28):** a row the receiver rejected travels again only when it changes
+   (PMO's cursor-based deltas; see [PMO deviations](#pmo-deviations)). This is accepted until 1f's
+   per-key retry set, on the condition that PMO's `ReceiptApplier` checks the counts above before it
+   advances a stream.
 5. **Delta ordering:** apply delta streams in package order; never store a cursor older than the one
    already stored (see rule 1's `out_of_order`).
 6. **Media by hash, never by URL (SSRF):** `inspection_reports` URL fields are ignored (typed `null`);
    the PDF comes from `files/<sha256>` or `PUT`/`GET /files/{sha256}` only, and a missing blob is the
    row reject `blob_missing`. Consumers fetch `inspection_packets.photos[].file_url` only over https
    from an allowlisted producer host; otherwise media travels by sha256 (`files/<sha256>` or
-   `/files/{sha256}`) and a URL-only photo is dropped (warning `photo_url_dropped`).
+   `/files/{sha256}`) and a URL-only photo is dropped (warning `photo_url_dropped`). **Production
+   allowlist (decided 2026-09-28):** production PMO allows exactly `nesc.texstar.app`
+   (`EXCHANGE_PHOTO_URL_HOSTS=nesc.texstar.app`); a test PMO names its own NESC test host.
 7. **Full streams:** absence means unchanged; see [Full streams](#full-streams-absence-means-unchanged).
 Receipts travel inside the next package in the opposite direction AND are fetchable from
 `GET /inbound/{uuid}/receipt`.
@@ -567,12 +573,28 @@ both forms.
 
 | question | options | state |
 |---|---|---|
-| `review_decisions` `merged` over HTTP | NESC's HTTP `pushMergeDecision` (`PmoReviewPushService`) sends `merged`, which PMO's frozen HTTP ingest (`NescDecisionIngest`) rejects; PMO maps `merge` to `confirmed` on the absorbed candidate and ignores `merged_into_record_id`. (a) NESC sends `merge` over HTTP — changes production data; (b) PMO's HTTP ingest accepts the `merged` alias; (c) leave it until the transport switch | open; the package path already aliases `merged` → `merge` and limits `unknown_candidate` to merge rows |
-| API-client refusal codes | NESC 1.1.0 answers `token_rotated` / `token_invalid` as PMO does, and PMO answers 403 `forbidden` for a token with neither ability as NESC does | shipped on NESC (1b); the owner confirms |
-| `permit` as an `UpdateOp` entity | add `permit` (key = permit number or `JB\|stage`) to `UpdateOp::ENTITIES` and the schema enum in 1d, or keep permits out of the bulk surface | deferred to 1d; no change in 1.1.0 |
-| confidence transport switch | PMO drops `confidence_label` and sends the label in `confidence` only after both apps run 1.1.0 (a 1.0.0 reader rejects a string confidence as `schema_invalid`) | the NESC poles transport switch stays blocked until both apps run 1.1.0 |
+| `review_decisions` `merged` over HTTP | NESC's HTTP `pushMergeDecision` (`PmoReviewPushService`) sends `merged`, which PMO's frozen HTTP ingest (`NescDecisionIngest`) rejects; PMO maps `merge` to `confirmed` on the absorbed candidate and ignores `merged_into_record_id`. (a) NESC sends `merge` over HTTP — changes production data; (b) PMO's HTTP ingest accepts the `merged` alias; (c) leave it until the transport switch | **decided 2026-09-28: (c)** — left as it is; NESC pins the absorbed record. The package path already aliases `merged` → `merge` and limits `unknown_candidate` to merge rows |
+| API-client refusal codes | NESC 1.1.0 answers `token_rotated` / `token_invalid` as PMO does, and PMO answers 403 `forbidden` for a token with neither ability as NESC does | **decided 2026-09-28:** PMO adopts NESC's separate 401 codes `token_rotated` and `token_invalid` (each tells the operator something different); shipped on NESC (1b), PMO follows in 1d |
+| `permit` as an `UpdateOp` entity | add `permit` to `UpdateOp::ENTITIES` and the schema enum in 1d, or keep permits out of the bulk surface | **decided 2026-09-28:** added in 1.3.0, keyed by permit number (`JB…\|permit_number` when a number repeats). PMO applies it through its permit override path; NESC keeps no permits and rejects the op |
+| confidence transport switch | PMO drops `confidence_label` and sends the label in `confidence` only after both apps run 1.1.0 (a 1.0.0 reader rejects a string confidence as `schema_invalid`) | **decided 2026-09-28:** no switch to package sync for poles until both apps run contract 1.2.0 or later |
 
 ## Changelog
+
+### 1.3.0 (2026-09-28)
+
+Additive, but still a wire change; manifest `version` / `MAJOR` stays 1 and no fixture changes.
+
+- **`permit` is an `UpdateOp` entity:** `UpdateOp::ENTITIES` and the `entity` enum of
+  `updates.schema.json` gain `permit`. The key is the permit number, or `JB…|permit_number` when a
+  number repeats. A 1.2.0 reader fails the whole request 422 `validation_failed` on a permit op, so
+  **do not send permit ops to a 1.2.0 reader** (check `producer.contract` or `GET /status`
+  `contract.version` first).
+- Which ops, entities and fields a receiver applies is its own capability: an op it cannot apply yet is
+  answered `unsupported_until_1d`, and an op on an entity it keeps no rows of is answered `rejected`
+  (`unknown_key` while the key names nothing). PMO applies permit ops through its permit override
+  path; NESC keeps no permits.
+- Owner decisions of 2026-09-28 recorded: [Owner questions](#owner-questions), Consumer rules 4
+  (resend on change until 1f) and 6 (production photo allowlist `nesc.texstar.app`).
 
 ### 1.2.0 (2026-09-28)
 
@@ -705,11 +727,14 @@ What the PMO side must do to pass `ContractSuite` and interoperate with the NESC
       unsupported_until_1d`), ≤ 500 ops synchronous and more queued (202), ≤ 2000 ops per request
     - blank = unchanged, `CLEAR` = clear
     - PMO decides which of its fields are writable. Everything else answers `unsupported_until_1d`
-      until the EntityMutator equivalent exists.
+      until the EntityMutator equivalent exists, and an entity PMO keeps no rows of answers `rejected`.
     - each verdict is `{seq, op_id, key, entity, field, op, outcome, message}` (`RowVerdict::toArray()`
       + extra); an op failing `updates.schema.json` fails the whole request 422 `validation_failed`
       with `row {stream: null, seq, key: null}`
-    - `permit` is not an `UpdateOp` entity in 1.1.0 (deferred to 1d; see [Owner questions](#owner-questions)).
+    - `permit` is an `UpdateOp` entity from 1.3.0 (decided 2026-09-28; see [Owner questions](#owner-questions)):
+      key = the permit number, or `JB…|permit_number` when a number repeats; PMO applies it through its
+      permit override path (`PermitFieldOverrides`, `origin` `exchange`). A PMO reader must be on 1.3.0
+      before it is sent permit ops.
 16. **Package-mode schedule:** with PMO's bridge unused, PMO's own pulls from NESC do not exist (PMO never
     called NESC). Nothing on PMO needs a transport switch, only the Import Center kind `nesc:exchange`
     and a "Download for NESC" button.

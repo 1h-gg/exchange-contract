@@ -185,4 +185,18 @@ final class DtoTest extends TestCase
         $this->assertContains($v->outcome, RowVerdict::OUTCOMES);
         $this->assertArrayNotHasKey('op_id', RowVerdict::fromArray(['seq' => 0, 'key' => 'k', 'outcome' => 'applied'])->toArray());
     }
+
+    public function test_permit_update_op_round_trips(): void
+    {
+        $this->assertSame(['job', 'task', 'pole', 'violation', 'hold', 'permit'], UpdateOp::ENTITIES);
+        $this->assertSame('1.3.0', Contract::VERSION);
+
+        $data = ['id' => 'u2', 'op' => 'override', 'entity' => 'permit', 'key' => 'JB0002690301|P-2026-0142', 'field' => 'status', 'value' => 'approved', 'reason' => 'county portal', 'program' => null];
+        $op = UpdateOp::fromArray($data);
+        $this->assertSame('permit', $op->entity);
+        $this->assertSame('JB0002690301|P-2026-0142', $op->key);
+        $this->assertFalse($op->isBasic());
+        $this->assertSame($data, $op->toArray());
+        $this->assertEquals($op, UpdateOp::fromArray($op->toArray()));
+    }
 }

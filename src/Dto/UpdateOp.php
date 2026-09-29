@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Texstar\Exchange\Dto;
 
 /**
- * One targeted bulk update (updates.schema.json). `update` and `clear` are the basic field ops every
- * app answers; the others are reserved for an entity mutator. Which ops an app actually applies is
- * that app's capability (NESC decides it per applier), not a property of the op.
+ * One targeted bulk update (updates.schema.json). `update` and `clear` are the basic field ops; the
+ * others create, delete or re-state rows. Which ops, entities and fields a receiver applies is that
+ * receiver's capability, not a property of the op: an op the receiver cannot apply yet is answered
+ * `unsupported_until_1d`, and an op on an entity the receiver keeps no rows of is answered `rejected`
+ * (or `unknown_key` while its key names nothing). `permit` (1.3.0) is keyed by permit number.
  */
 final readonly class UpdateOp
 {
@@ -17,7 +19,7 @@ final readonly class UpdateOp
 
     public const OPS_RESERVED = ['create', 'override', 'clear_override', 'delete', 'set_status', 'link_external_ref'];
 
-    public const ENTITIES = ['job', 'task', 'pole', 'violation', 'hold'];
+    public const ENTITIES = ['job', 'task', 'pole', 'violation', 'hold', 'permit'];
 
     private const KNOWN = ['id', 'op', 'entity', 'key', 'field', 'value', 'reason', 'program', 'origin', 'origin_ref'];
 

@@ -1797,7 +1797,7 @@
                                             "properties": {
                                                 "version": {
                                                     "type": "string",
-                                                    "const": "1.2.0"
+                                                    "const": "1.3.0"
                                                 },
                                                 "major": {
                                                     "type": "integer",
@@ -2080,7 +2080,7 @@
         "/updates": {
             "post": {
                 "operationId": "exchange.updates.store",
-                "description": "JSON `{ops: [UpdateOp...], dry_run?, create?}` (at most 2000 ops) or multipart `workbook` (.xlsx from\nGET /updates/workbook, edited) with `dry_run` / `create`. Up to 500 ops answer 200 with a verdict per\nop (`applied | unchanged | rejected | forbidden | unknown_key | unsupported_until_1d`, addressed by\n`seq`, `op_id` and `key`); more answer 202 with the batch to poll at GET /imports/{id}. `dry_run`\npreviews through the same dispatcher and writes nothing; `create` (unknown keys become rows) is\nPhase 1d's and is answered `unsupported_until_1d`.",
+                "description": "JSON `{ops: [UpdateOp...], dry_run?, create?}` (at most 2000 ops) or multipart `workbook` (.xlsx from\nGET /updates/workbook, edited) with `dry_run` / `create`. Up to 500 ops answer 200 with a verdict per\nop (`applied | unchanged | rejected | forbidden | unknown_key | unsupported_until_1d`, addressed by\n`seq`, `op_id` and `key`); more answer 202 with the batch to poll at GET /imports/{id}. `dry_run`\npreviews through the same dispatcher and writes nothing. `create` lets an op whose key names nothing\ncreate the row where that entity's applier supports it; otherwise it is answered per row\n(`unsupported_until_1d`). Which ops, entities and fields apply is answered per row, never by a 4xx; an\nop that fails the contract's `updates.schema.json` (contract 1.3.0 entities: job, task, pole,\nviolation, hold, permit) fails the whole request 422 `validation_failed`.",
                 "summary": "Apply bulk updates",
                 "tags": [
                     "Updates"
@@ -2121,7 +2121,7 @@
         "/updates/workbook": {
             "get": {
                 "operationId": "exchange.updates.workbook",
-                "description": "The .xlsx with sheets Jobs, Tasks, Poles, Violations and Holds: read-only columns grey, editable\ncolumns white (blank = no change, CLEAR empties), Phase 1d columns yellow, a Lists legend, and hidden\n`_meta` / `_base_*` sheets that let the import tell an edit from an exported value. `program` stamps\nthe scope.",
+                "description": "The .xlsx with one sheet per entity NESC keeps rows of: read-only columns grey, editable columns\nwhite (blank = no change, CLEAR empties), columns not yet writable yellow, a Lists legend, and hidden\n`_meta` / `_base_*` sheets that let the import tell an edit from an exported value. `program` stamps\nthe scope.",
                 "summary": "Download the bulk-update workbook",
                 "tags": [
                     "Updates"
@@ -2335,7 +2335,8 @@
                                         "task",
                                         "pole",
                                         "violation",
-                                        "hold"
+                                        "hold",
+                                        "permit"
                                     ]
                                 },
                                 "key": {
