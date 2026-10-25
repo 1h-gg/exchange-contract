@@ -76,7 +76,7 @@
             "stream": "inspection_reports",
             "schema": "inspection_reports@1",
             "rows": 2,
-            "sha256": "da553b6c7e3a25f8d85cb99a896e3b2592e41059b89f6e56f7d4e111d3498cb2",
+            "sha256": "56156d1a1572b0a4c77f0706225abb5801009695447c768e13bb9f5f21de6be7",
             "bytes": 1404,
             "mode": "delta"
         },
@@ -128,10 +128,10 @@
     ],
     "blobs": [
         {
-            "sha256": "63cafc5a4589d91e6e65a3aa50db26f883dfdc84bb08e84456d0f0432ab655b8",
+            "sha256": "ca6e46b9b8bb2992734ecaacb4f7587e877054f5fe48b828495e5b9147fb2ef6",
             "bytes": 46,
             "mime": "application/pdf",
-            "path": "files/63cafc5a4589d91e6e65a3aa50db26f883dfdc84bb08e84456d0f0432ab655b8"
+            "path": "files/ca6e46b9b8bb2992734ecaacb4f7587e877054f5fe48b828495e5b9147fb2ef6"
         },
         {
             "sha256": "6a25b77960e1cffe1e7a42747b7e8ab34bfd66e3672f3a51deea4efed443fa6a",
@@ -169,6 +169,6 @@
     "signature": {
         "alg": "HMAC-SHA256",
         "key_id": "texstar:comcast",
-        "value": "f861d547f0c8d86e5718e2731209eafeccf25edb82069aecc08c08040626082a"
+        "value": "dd07ab332f2a6658e4f2590e0079498c84bd84d2e2d2ebe6311758334d72cec5"
     }
 }

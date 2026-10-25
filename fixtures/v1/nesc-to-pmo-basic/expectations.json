@@ -59,7 +59,7 @@
     "source": {
         "readiness": "NESC tests/Feature/P2/P2ContractPinTest.php:53-58 PAYLOAD_KEYS (+backlog, app/Console/Commands/PushP2Readiness.php:83) via tests/Support/P2FrozenFixture.php::readinessFixture; tasks[] = TASK_KEYS :60 + system/external_task_id (package rows only)",
         "readiness_feed": "NESC app/Services/P2/P2ReadinessService.php:65-87 feedSummary()",
-        "inspection_reports": "NESC P2ContractPinTest.php:73-77 REPORT_KEYS; content_base64 null, PDF bytes under files/<sha256> (stub renderer, tests/Support/P2FrozenFixture.php::freezeP2Contract)",
+        "inspection_reports": "NESC P2ContractPinTest.php:73-77 REPORT_KEYS; content_base64 null, PDF bytes under files/<sha256> (stub renderer, tests/Support/P2FrozenFixture.php; since 2026-10-25 it hashes the HTML with the machine's file:// paths normalised, so the blobs are the same on every host::freezeP2Contract)",
         "inspection_packets": "NESC P2ContractPinTest.php:79-87 PACKET_KEYS via P2FrozenFixture::packetFixture (InspectionPacketOutboxService::packet)",
         "review_decisions": "NESC app/Services/Pmo/PmoReviewPushService.php:43-53 (confirm/reject) and :91-101 (merged); external_decision_id :116-119",
         "observations": "NESC app/Services/Pmo/PmoSyncService.php:312-338 pushObservations + external_id nesc:obs:{jb}:{field}:{sha8(value)}",
